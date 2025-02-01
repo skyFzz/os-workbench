@@ -1,0 +1,5 @@
+.*
+
+# Exclude .gitignore and .git from being ignored
+!.gitignore
+!.git
