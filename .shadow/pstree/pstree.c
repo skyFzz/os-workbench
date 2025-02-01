@@ -16,7 +16,7 @@ struct proc {
 	uint32_t pid;
 	uint32_t ppid;
 	uint32_t child[];
-}
+};
 
 void usage(char *argv) {
 	printf("pstree: unsupported option '%s'\n", argv);
