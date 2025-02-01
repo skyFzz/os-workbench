@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
 #include <assert.h>
 
@@ -89,6 +90,5 @@ void valid(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
 	valid(argc, argv);
-
   	return 0;
 }
