@@ -105,6 +105,7 @@ void read(struct proc *procs) {
 	while (entry != NULL) {
 		assert(entry->d_type != DT_UNKNOWN);	// only some fs fully support d_type
 		if (entry->d_type == DT_DIR) {
+			printf("%s\n", entry->d_name);
 			if (entry->d_name[0] >= '0' && entry->d_name[0] <= '9') {
 				strncat(tmp, entry->d_name, 8);				
 				subdir = opendir(tmp);
