@@ -121,7 +121,7 @@ void read(struct proc *procs) {
 			ret = closedir(subdir);
 			assert(ret == 0);
 			
-			tmp = "/proc/";
+			strcpy(tmp, "/proc/");
 		} 	
 		entry = readdir(dir);	
 	}
