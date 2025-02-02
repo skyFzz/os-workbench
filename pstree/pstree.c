@@ -3,9 +3,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/types.h>
+#include <dirent.h>
 #include <assert.h>
-
-#define PATH "/proc/"
+#include <errno.h>
 
 bool P = false;
 bool N = false;
@@ -87,8 +88,56 @@ void valid(int argc, char *argv[]) {
   	assert(!argv[argc]);
 }
 
+void read(struct proc *procs) {
+	DIR *dir;
+	DIR *subdir;
+	const char path[] = "/proc/";
+	char tmp[16] = "/proc/";
+	int ret;
+	struct dirent *entry;
+	struct dirent *subent;
+
+	dir = opendir(path);
+	assert(dir != NULL);
+
+	errno = 0;
+	entry = readdir(dir);
+	assert(errno == 0);
+	while (entry != NULL) {
+		assert(entry->d_type != DT_UNKNOWN);	// only some fs fully support d_type
+		if (entry->d_type == DT_DIR) {
+			if (entry->d_name[0] - '0' > 0 && entry->d_name[0] - '0' < 10) {
+				strncat(tmp, entry->d_name, 8);				
+				subdir = opendir(tmp);
+				assert(subdir != NULL);
+				errno = 0;
+				subent = readdir(dir);
+				assert(errno == 0);
+				while (subent != NULL) {
+					
+					
+				}		
+				assert(errno == 0);
+				ret = closedir(subdir);
+				assert(ret == 0);
+			}
+		} 	
+		
+			
+		entry = readdir(dir);	
+	}
+	assert(errno == 0);
+
+	ret = closedir(dir);
+	assert(ret == 0);
+}
 
 int main(int argc, char *argv[]) {
+	struct proc *procs = malloc(50000 * sizeof(struct proc));
+	assert(procs != NULL);
 	valid(argc, argv);
+	read(procs);
+
+	free(procs);
   	return 0;
 }
