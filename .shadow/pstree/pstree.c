@@ -104,24 +104,24 @@ void read(struct proc *procs) {
 	entry = readdir(dir);
 	while (entry != NULL) {
 		assert(entry->d_type != DT_UNKNOWN);	// only some fs fully support d_type
-		if (entry->d_type == DT_DIR) {
+		if (entry->d_type == DT_DIR && entry->d_name[0] >= '0' && entry->d_name[0] <= '9') {
 			printf("%s\n", entry->d_name);
-			if (entry->d_name[0] >= '0' && entry->d_name[0] <= '9') {
-				strncat(tmp, entry->d_name, 8);				
-				printf("%s\n", tmp);
-				subdir = opendir(tmp);
-				printf("%d\n", errno);
-				assert(subdir != NULL);
-				errno = 0;
-				subent = readdir(dir);
-				while (subent != NULL) {
-					printf("Entry name: %s\n", subent->d_name);
-					subent = readdir(subdir);
-				}		
-				assert(errno == 0);
-				ret = closedir(subdir);
-				assert(ret == 0);
-			}
+			strncat(tmp, entry->d_name, 8);				
+			printf("%s\n", tmp);
+			subdir = opendir(tmp);
+			printf("%d\n", errno);
+			assert(subdir != NULL);
+			errno = 0;
+			subent = readdir(dir);
+			while (subent != NULL) {
+				printf("Entry name: %s\n", subent->d_name);
+				subent = readdir(subdir);
+			}		
+			assert(errno == 0);
+			ret = closedir(subdir);
+			assert(ret == 0);
+			
+			tmp = "/proc/";
 		} 	
 		entry = readdir(dir);	
 	}
