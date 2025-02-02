@@ -108,6 +108,7 @@ void read(struct proc *procs) {
 			printf("%s\n", entry->d_name);
 			if (entry->d_name[0] >= '0' && entry->d_name[0] <= '9') {
 				strncat(tmp, entry->d_name, 8);				
+				printf("%s\n", tmp);
 				subdir = opendir(tmp);
 				printf("%d\n", errno);
 				assert(subdir != NULL);
