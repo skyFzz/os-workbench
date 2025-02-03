@@ -141,6 +141,7 @@ void getNodes(struct Node *hashmap) {
 					printf("pid is %s\n", pid);
 					ret = fclose(fp);
 					assert(ret == 0);
+					memset(pid, 0, 8);
 				}
 				subent = readdir(subdir);
 			}		
