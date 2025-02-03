@@ -108,7 +108,7 @@ void getNodes(struct Node *hashmap) {
 	struct dirent *subent;
 	FILE *fp;	// $ulimit -Hn $1048576
 	char pid[8];
-	int i;
+	int i = 0;	// init
 
 	dir = opendir(path);
 	assert(dir != NULL);
@@ -164,6 +164,6 @@ int main(int argc, char *argv[]) {
 	getArgs(argc, argv);
 	getNodes(hashmap);
 
-	free(hashmap);
+	// free(hashmap); // unallocated object
   	return 0;
 }
