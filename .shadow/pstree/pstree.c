@@ -135,6 +135,7 @@ void getNodes(struct Node *hashmap) {
 					ret = fgetc(fp);
 					while(ret != ' ') {
 						pid[i++] = ret;
+						ret = fgetc(fp);
 					}
 					pid[i] = '\0';
 					printf("pid is %s\n", pid);
