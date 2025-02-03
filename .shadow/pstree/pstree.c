@@ -41,7 +41,7 @@ void usage(char *argv) {
 	printf("\t-V, --version\t\tdisplay version information\n");
 }
 
-void valid(int argc, char *argv[]) {
+void getArgs(int argc, char *argv[]) {
 	char *path;
 
 	for (int i = 0; i < argc; i++) {
@@ -99,7 +99,7 @@ void valid(int argc, char *argv[]) {
   	assert(!argv[argc]);
 }
 
-void read(struct Node *hashmap) {
+void getNodes(struct Node *hashmap) {
 	DIR *dir;
 	DIR *subdir;
 	char path[20] = "/proc/";	// worst case: /proc/1234567/stat
@@ -130,7 +130,7 @@ void read(struct Node *hashmap) {
 					fp = fopen(path, "r");
 					if (!fp) {
 						fclose(fp);
-						eixt(-1);
+						exit(-1);
 					}
 					ret = fgetc(fp);
 					while(ret != ' ') {
@@ -161,8 +161,8 @@ int main(int argc, char *argv[]) {
 	struct Node hashmap[HASH_SIZE];
 	assert(hashmap != NULL);
 
-	valid(argc, argv);
-	read(hashmap);
+	getArgs(argc, argv);
+	getNodes(hashmap);
 
 	free(hashmap);
   	return 0;
