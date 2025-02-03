@@ -6,17 +6,28 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <assert.h>
+#include <unistd.h>
 #include <errno.h>
+
+#define HASH_SIZE 65536
 
 bool P = false;
 bool N = false;
 bool V = false;
 
-struct proc {
+// refer to CLRS p.246 on a left-child, right-sibling representation for rooted trees
+struct Node {
 	char *name;
-	uint32_t pid;
-	uint32_t ppid;
-	uint32_t child[];
+	pid_t pid;
+	pid_t ppid;
+	struct Node *parent;
+	struct Node *left;
+	struct Node *risi;
+	struct Node *next;
+};
+
+unsigned int hash(pid_t pid) {
+	return pid % HASH_SIZE;
 };
 
 void usage(char *argv) {
@@ -31,7 +42,7 @@ void usage(char *argv) {
 }
 
 void valid(int argc, char *argv[]) {
-	char *tmp;
+	char *path;
 
 	for (int i = 0; i < argc; i++) {
     		assert(argv[i]);
@@ -60,22 +71,22 @@ void valid(int argc, char *argv[]) {
 			} 
 		} else if (argl > 2) {
 			if (argv[i][0] == '-' && argv[i][1] == '-') {
-				// tmp = (char *)malloc((argl - 2) * sizeof(char));	// buffer overflow
-				tmp = (char *)malloc((argl - 2) + 1 * sizeof(char));
-				assert(tmp);
-				strcpy(tmp, argv[i] + 2);
-				// if (strcmp(tmp, "show-pids")) {	// true for all non-matching strings
-				if (strcmp(tmp, "show-pids") == 0) {
+				// path = (char *)malloc((argl - 2) * sizeof(char));	// buffer overflow
+				path = (char *)malloc((argl - 2) + 1 * sizeof(char));
+				assert(path);
+				strcpy(path, argv[i] + 2);
+				// if (strcmp(path, "show-pids")) {	// true for all non-matching strings
+				if (strcmp(path, "show-pids") == 0) {
 					P = true;
-				} else if (strcmp(tmp, "numeric-sort") == 0) {
+				} else if (strcmp(path, "numeric-sort") == 0) {
 					N = true;
-				} else if (strcmp(tmp, "version") == 0) {
+				} else if (strcmp(path, "version") == 0) {
 					V = true;
 				} else {
 					usage(argv[i]);
 					exit(-1);
 				}
-				free(tmp);
+				free(path);
 			} else {
 				usage(argv[i]);
 				exit(-1);
@@ -88,14 +99,16 @@ void valid(int argc, char *argv[]) {
   	assert(!argv[argc]);
 }
 
-void read(struct proc *procs) {
+void read(struct Node *hashmap) {
 	DIR *dir;
 	DIR *subdir;
-	const char path[] = "/proc/";
-	char tmp[16] = "/proc/";
+	char path[20] = "/proc/";	// worst case: /proc/1234567/stat
 	int ret;
 	struct dirent *entry;
 	struct dirent *subent;
+	FILE *fp;	// $ulimit -Hn $1048576
+	char pid[8];
+	int i;
 
 	dir = opendir(path);
 	assert(dir != NULL);
@@ -105,23 +118,36 @@ void read(struct proc *procs) {
 	while (entry != NULL) {
 		assert(entry->d_type != DT_UNKNOWN);	// only some fs fully support d_type
 		if (entry->d_type == DT_DIR && entry->d_name[0] >= '0' && entry->d_name[0] <= '9') {
-			printf("%s\n", entry->d_name);
-			strncat(tmp, entry->d_name, 8);				
-			printf("%s\n", tmp);
-			subdir = opendir(tmp);
-			printf("%d\n", errno);
+			strncat(path, entry->d_name, 8);	// pid_max literal has 8 digits
+			strncat(path, "/", 2);
+			subdir = opendir(path);
 			assert(subdir != NULL);
 			errno = 0;
 			subent = readdir(dir);
 			while (subent != NULL) {
-				printf("Entry name: %s\n", subent->d_name);
+				if (strncmp(subent->d_name, "stat", 5) == 0) {
+					strncat(path, "stat", 5);
+					fp = fopen(path, "r");
+					if (!fp) {
+						fclose(fp);
+						eixt(-1);
+					}
+					ret = fgetc(fp);
+					while(ret != ' ') {
+						pid[i++] = ret;
+					}
+					pid[i] = '\0';
+					printf("pid is %s\n", pid);
+					ret = fclose(fp);
+					assert(ret == 0);
+				}
 				subent = readdir(subdir);
 			}		
 			assert(errno == 0);
 			ret = closedir(subdir);
 			assert(ret == 0);
 			
-			strcpy(tmp, "/proc/");
+			strcpy(path, "/proc/");		// reset root dir
 		} 	
 		entry = readdir(dir);	
 	}
@@ -132,11 +158,12 @@ void read(struct proc *procs) {
 }
 
 int main(int argc, char *argv[]) {
-	struct proc *procs = malloc(50000 * sizeof(struct proc));
-	assert(procs != NULL);
-	valid(argc, argv);
-	read(procs);
+	struct Node hashmap[HASH_SIZE];
+	assert(hashmap != NULL);
 
-	free(procs);
+	valid(argc, argv);
+	read(hashmap);
+
+	free(hashmap);
   	return 0;
 }
