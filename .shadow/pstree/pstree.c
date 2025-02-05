@@ -172,7 +172,6 @@ struct List *makeLists() {
 					tmp.tail->next->next = node;
 					tmp.tail->next = node;
 					node->next = NULL;
-					printf("The name is %s\n", tmp.head->next->name);
 								
 					ret = fclose(fp);
 					assert(ret == 0);
@@ -190,6 +189,7 @@ struct List *makeLists() {
 		entry = readdir(dir);	
 	}
 	assert(errno == 0);
+	printf("The name is %s\n", tmp.head->next->name);
 
 	ret = closedir(dir);
 	assert(ret == 0);
