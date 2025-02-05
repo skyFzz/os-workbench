@@ -15,15 +15,16 @@ bool P = false;
 bool N = false;
 bool V = false;
 
-// refer to CLRS p.246 on a left-child, right-sibling representation for rooted trees
 struct Node {
 	char *name;
 	pid_t pid;
 	pid_t ppid;
+	struct Node *next;
+
+	// refer to CLRS p.246 on a left-child, right-sibling representation for rooted trees
 	struct Node *parent;
 	struct Node *left;
 	struct Node *risi;
-	struct Node *next;
 };
 
 struct List {
@@ -116,6 +117,7 @@ struct List *makeLists() {
 	struct dirent *subent;
 	FILE *fp;	// $ulimit -Hn $1048576
 	char pid_s[8];
+	char ppid_s[8];
 	int i = 0;	// init
 
 	dir = opendir(path);
@@ -127,6 +129,7 @@ struct List *makeLists() {
 		assert(entry->d_type != DT_UNKNOWN);	// only some fs fully support d_type
 		if (entry->d_type == DT_DIR && entry->d_name[0] >= '0' && entry->d_name[0] <= '9') {
 			struct Node *node = (struct Node *)malloc(sizeof(struct Node)); 
+			node->next = NULL;
 			node->name = (char *)malloc(16 * sizeof(char));	// max length of process name
 
 			strncat(path, entry->d_name, 8);	// pid_max literal has 8 digits
@@ -162,18 +165,31 @@ struct List *makeLists() {
 					}
 					node->name[i] = '\0';
 
+					i = 0;
+					ret = fgetc(fp);	// omit ' '
+					ret = fgetc(fp);	// omit 'S'
+					ret = fgetc(fp);	// omit ' '
+					ret = fgetc(fp);	// get ppid
+					while(ret != ' ') {
+						ppid_s[i++] = ret;
+						ret = fgetc(fp);
+					}
+					ppid_s[i] = '\0';
+					node->ppid = atoi(ppid_s);
+					printf("ppid is %d\n", node->ppid);
+
 					// init the linked list otherwise just append to the end
 					tmp = lists[hash(node->pid)];
-					// init dummy nodes if hash key is new
 					if (tmp.head == NULL) {
+						// init dummy nodes if list is empty
 						tmp.head = (struct Node *)malloc(sizeof(struct Node));
 						tmp.tail = (struct Node *)malloc(sizeof(struct Node));
-						tmp.head->next = tmp.tail;
-						tmp.tail->next = tmp.head;
+						tmp.head->next = node;
+						tmp.tail->next = node;
+					} else {
+						tmp.tail->next->next = node;
+						tmp.tail->next = node;
 					}
-					tmp.tail->next->next = node;
-					tmp.tail->next = node;
-					node->next = NULL;
 					printf("The name of the process %d is %s\n", tmp.head->next->pid, tmp.head->next->name);
 								
 					ret = fclose(fp);
