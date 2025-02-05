@@ -107,7 +107,7 @@ void getArgs(int argc, char *argv[]) {
 }
 
 struct List *makeLists() {
-	struct List *lists = (struct List *)malloc(()HASH_SIZE + 1) * sizeof(struct List));
+	struct List *lists = (struct List *)malloc((HASH_SIZE + 1) * sizeof(struct List));
 	assert(lists);
 	struct List *tmp;	// local worker
 	DIR *dir;
