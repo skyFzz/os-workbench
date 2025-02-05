@@ -121,12 +121,11 @@ struct List *makeLists() {
 	char ppid_s[8];
 	int i = 0;	// init
 
-	/*
 	for (i = 0; i < HASH_SIZE; i++) {
+		printf("hi");
 		lists[i].head = NULL;
 		lists[i].tail= NULL;
 	}
-	*/
 
 	dir = opendir(path);
 	assert(dir);
