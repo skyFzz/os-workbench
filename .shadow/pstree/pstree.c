@@ -173,6 +173,7 @@ struct List *makeLists() {
 						ret = fgetc(fp);
 					}
 					node->name[i] = '\0';
+					printf("node->name is %s\n", node->name);
 
 					i = 0;
 					ret = fgetc(fp);	// omit ' '
