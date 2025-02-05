@@ -193,8 +193,7 @@ struct List *makeLists() {
 					// init the linked list otherwise just append to the end
 					// tmp = lists[hash(node->pid)]; // this is wrong, together with struct List tmp; rather than using pointer
 					printf("hash is %d\n", hash(node->pid));
-					tmp = &(lists[hash(node->pid)]); // this is correct 
-					printf("node name is %s\n", tmp->head->next->name);
+					tmp = &lists[hash(node->pid)]; // this is correct 
 					if (tmp->head == NULL) {
 						// init dummy nodes if list is empty
 						tmp->head = (struct Node *)malloc(sizeof(struct Node));
