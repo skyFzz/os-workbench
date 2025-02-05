@@ -224,6 +224,7 @@ void freeLists(struct List *lists) {
 			continue;	// only free the allocated ones
 		}
 		tar = lists[i].head->next;
+		printf("head->next name is %d\n", tar->name);
 		do {
 			nxt = tar->next;
 			free(tar->name); // don't forget about name
