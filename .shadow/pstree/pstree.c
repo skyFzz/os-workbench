@@ -141,12 +141,13 @@ struct List *makeLists() {
 			node->name = (char *)malloc(128 * sizeof(char)); // on htis machine /proc/pid/stat can display over 15 bytes
 
 			strncat(path, entry->d_name, 8);	// pid_max literal has 8 digits
+			printf("ent d_name is %s\n", entry->d_name);
 			strncat(path, "/", 2);
 			subdir = opendir(path);
 			assert(subdir != NULL);
 			errno = 0;
 			subent = readdir(subdir);
-			printf("d_name is %s\n", subent->d_name);
+			printf("subent d_name is %s\n", subent->d_name);
 			while (subent) {
 				if (strncmp(subent->d_name, "stat", 5) == 0) {
 					strncat(path, "stat", 5);
