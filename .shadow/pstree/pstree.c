@@ -29,11 +29,11 @@ struct Node {
 struct List {
 	struct Node *head;
 	struct Node *tail;
-}
+};
 
 unsigned int hash(pid_t pid) {
 	return pid % HASH_SIZE;
-};
+}
 
 void usage(char *argv) {
 	printf("pstree: unsupported option '%s'\n", argv);
@@ -104,7 +104,10 @@ void getArgs(int argc, char *argv[]) {
   	assert(!argv[argc]);
 }
 
-void getProcs(struct List **list) {
+struct List *makeLists() {
+	struct List *lists = (struct List *)malloc(HASH_SIZE * sizeof(struct List));
+	assert(lists);
+	struct List tmp;	// local struct
 	DIR *dir;
 	DIR *subdir;
 	char path[20] = "/proc/";	// worst case: /proc/1234567/stat
@@ -115,17 +118,16 @@ void getProcs(struct List **list) {
 	char pid_s[8];
 	pid_t pid;
 	int i = 0;	// init
-	struct List tmp = (struct List)malloc(sizeof(struct List));
 
 	dir = opendir(path);
-	assert(dir != NULL);
+	assert(dir);
 
 	errno = 0;
 	entry = readdir(dir);
-	while (entry != NULL) {
+	while (entry) {
 		assert(entry->d_type != DT_UNKNOWN);	// only some fs fully support d_type
 		if (entry->d_type == DT_DIR && entry->d_name[0] >= '0' && entry->d_name[0] <= '9') {
-			struct Node node = (struct Node)malloc(sizeof(node)); 
+			struct Node *node = (struct Node *)malloc(sizeof(struct Node)); 
 			node.name = (char *)malloc(16 * sizeof(char));	// max length of process name
 
 			strncat(path, entry->d_name, 8);	// pid_max literal has 8 digits
@@ -134,7 +136,7 @@ void getProcs(struct List **list) {
 			assert(subdir != NULL);
 			errno = 0;
 			subent = readdir(dir);
-			while (subent != NULL) {
+			while (subent) {
 				if (strncmp(subent->d_name, "stat", 5) == 0) {
 					strncat(path, "stat", 5);
 					fp = fopen(path, "r");
@@ -151,28 +153,28 @@ void getProcs(struct List **list) {
 					pid_s[i] = '\0';
 					pid = atoi(pid_s);
 					assert(pid != 0);
-					node.pid = pid;
+					node->pid = pid;
 					
 					i = 0;
 					ret = fgetc(fp);
 					ret = fgetc(fp);
 					while(ret != ')') {
-						node.name[i++] = ret;
+						node->name[i++] = ret;
 						ret = fgetc(fp);
 					}
-					printf("The name is %s\n", node.name);
+					printf("The name is %s\n", node->name);
 
 					// init the linked list otherwise just append to the end	
-					tmp = list[hash(pid)];
-					if (tmp->head == NULL) {
-						tmp->head = (struct Node)malloc(sizeof(struct Node));
-						tmp->tail = (struct Node)malloc(sizeof(struct Node));
-						tmp->head.next = tmp->tail;
-						tmp->tail.next = tmp->head;
+					tmp = *(list[hash(pid)]);
+					if (tmp.head == NULL) {
+						tmp.head = (struct Node *)malloc(sizeof(struct Node));
+						tmp.tail = (struct Node *)malloc(sizeof(struct Node));
+						tmp.head->next = tmp.tail;
+						tmp.tail->next = tmp.head;
 					}
-					list[hash(pid)]->tail.next.next = node;
-					list[hash(pid)]->tail.next = node;
-					node.next = NULL;
+					tmp.tail->next->next = node;
+					tmp.tail->next = node;
+					node->next = NULL;
 								
 					ret = fclose(fp);
 					assert(ret == 0);
@@ -194,25 +196,18 @@ void getProcs(struct List **list) {
 	assert(ret == 0);
 }
 
-void freeMap(struct Node *map) {
+void freeList(struct List list[]) {
 	for (int i = 0; i < HASH_SIZE; i++) {
-		if (map[i]) {
-			struct Node *cur = map[i];
-			struct Node *tmp = map[i].next;
-			while(tmp) {
-				free()
-			}
+		if (list[i]) {
+			
 		}
 	}
 }
 
 int main(int argc, char *argv[]) {
-	struct List list[] = (struct List *)malloc(HASH_SIZE * sizeof(struct List));
-	assert(list != NULL);
-
+	struct List *lists = makeLists();
+	assert(lists != NULL);
 	getArgs(argc, argv);
-	getProcs(list);
-
-	// free(hashmap); // unallocated object
+	free(lists);
   	return 0;
 }
