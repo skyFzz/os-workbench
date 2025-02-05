@@ -164,6 +164,7 @@ struct List *makeLists() {
 					}
 					pid_s[i] = '\0';
 					node->pid = atoi(pid_s);
+					printf("node->pid is %d\n", node->pid);
 					
 					i = 0;
 					ret = fgetc(fp);
