@@ -223,7 +223,7 @@ void freeLists(struct List *lists) {
 		printf("head->next name is %s\n", tar->name);
 		do {
 			nxt = tar->next;
-			free(tar->name); // don't forget about name
+			free(tar->name); // don't forget name
 			free(tar);	
 			tar = nxt;
 		} while (tar != NULL);
