@@ -151,6 +151,7 @@ struct List *makeLists() {
 					}
 					pid_s[i] = '\0';
 					node->pid = atoi(pid_s);
+					printf("pid is %d\n", node->pid);
 					
 					i = 0;
 					ret = fgetc(fp);
@@ -172,7 +173,7 @@ struct List *makeLists() {
 					tmp.tail->next->next = node;
 					tmp.tail->next = node;
 					node->next = NULL;
-					printf("The name is %s\n", tmp.head->next->name);
+					printf("The name of the process %d is %s\n", tmp.head->next->pid, tmp.head->next->name);
 								
 					ret = fclose(fp);
 					assert(ret == 0);
