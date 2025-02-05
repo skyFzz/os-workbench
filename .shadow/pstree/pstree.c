@@ -216,6 +216,7 @@ struct List *makeLists() {
 void freeLists(struct List *lists) {
 	struct Node *nxt;
 	struct Node *tar;
+	printf("hi\n");
 	for (int i = 0; i < HASH_SIZE; i++) {
 		if (lists[i].head == NULL) { 
 			continue;	// only free the allocated ones
