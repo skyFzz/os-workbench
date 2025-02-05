@@ -159,9 +159,8 @@ struct List *makeLists() {
 						node->name[i++] = ret;
 						ret = fgetc(fp);
 					}
-					printf("The name is %s\n", node->name);
 
-					// init the linked list otherwise just append to the end	
+					// init the linked list otherwise just append to the end
 					tmp = lists[hash(node->pid)];
 					// init dummy nodes if hash key is new
 					if (tmp.head == NULL) {
@@ -173,6 +172,7 @@ struct List *makeLists() {
 					tmp.tail->next->next = node;
 					tmp.tail->next = node;
 					node->next = NULL;
+					printf("The name is %s\n", tmp.head->name);
 								
 					ret = fclose(fp);
 					assert(ret == 0);
