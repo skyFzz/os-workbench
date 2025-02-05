@@ -109,7 +109,7 @@ void getArgs(int argc, char *argv[]) {
 struct List *makeLists() {
 	struct List *lists = (struct List *)malloc(HASH_SIZE * sizeof(struct List));
 	assert(lists);
-	struct List tmp;	// local struct
+	struct List *tmp;	// local worker
 	DIR *dir;
 	DIR *subdir;
 	char path[20] = "/proc/";	// worst case: /proc/1234567/stat
@@ -178,16 +178,17 @@ struct List *makeLists() {
 					node->ppid = atoi(ppid_s);
 
 					// init the linked list otherwise just append to the end
-					tmp = lists[hash(node->pid)];
-					if (tmp.head == NULL) {
+					// tmp = lists[hash(node->pid)]; // this is wrong, together with struct List tmp; rather than using pointer
+					tmp = &lists[hash(node->pid)]; // this is correct 
+					if (tmp->head == NULL) {
 						// init dummy nodes if list is empty
-						tmp.head = (struct Node *)malloc(sizeof(struct Node));
-						tmp.tail = (struct Node *)malloc(sizeof(struct Node));
-						tmp.head->next = node;
-						tmp.tail->next = node;
+						tmp->head = (struct Node *)malloc(sizeof(struct Node));
+						tmp->tail = (struct Node *)malloc(sizeof(struct Node));
+						tmp->head->next = node;
+						tmp->tail->next = node;
 					} else {
-						tmp.tail->next->next = node;
-						tmp.tail->next = node;
+						tmp->tail->next->next = node;
+						tmp->tail->next = node;
 					}
 								
 					ret = fclose(fp);
@@ -217,15 +218,8 @@ void freeLists(struct List *lists) {
 	struct Node *nxt;
 	struct Node *tar;
 	for (int i = 0; i < HASH_SIZE; i++) {
-		printf("name is %s\n", lists[i].head->next->name);
-		if (lists[i].head == NULL) { 
-			printf("hi\n");
-			printf("%d\n", i);
-			
-			continue;	// only free the allocated ones
-		}
+		if (lists[i].head == NULL) continue;	// only free the allocated ones
 		tar = lists[i].head->next;
-		printf("hi");
 		printf("head->next name is %s\n", tar->name);
 		do {
 			nxt = tar->next;
