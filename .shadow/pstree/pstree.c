@@ -121,14 +121,6 @@ struct List *makeLists() {
 	char ppid_s[8];
 	int i = 0; // init
 
-	/*
-	for (i = 0; i < HASH_SIZE; i++) {
-		lists[i].head = NULL;
-		lists[i].tail= NULL;
-	}
-	i = 0;
-	*/
-
 	dir = opendir(path);
 	assert(dir);
 
@@ -146,13 +138,10 @@ struct List *makeLists() {
 			subdir = opendir(path); // /proc/pid/
 			assert(subdir != NULL);
 			errno = 0;
-			subent = readdir(subdir); // /proc/pid/.
-			printf("subent d_name is %s\n", subent->d_name);
+			subent = readdir(subdir); // /proc/pid/stat
 			while (subent) {
 				if (strncmp(subent->d_name, "stat", 5) == 0) {
-					printf("hi\n");
 					strncat(path, "stat", 5);
-					printf("hi\n");
 					fp = fopen(path, "r");
 					if (!fp) {
 						fclose(fp);
@@ -164,10 +153,8 @@ struct List *makeLists() {
 						pid_s[i++] = ret;
 						ret = fgetc(fp);
 					}
-					printf("hi\n");
 					pid_s[i] = '\0';
 					node->pid = atoi(pid_s);
-					printf("node->pid is %d\n", node->pid);
 					
 					i = 0;
 					ret = fgetc(fp);
@@ -177,7 +164,6 @@ struct List *makeLists() {
 						ret = fgetc(fp);
 					}
 					node->name[i] = '\0';
-					printf("node->name is %s\n", node->name);
 
 					i = 0;
 					ret = fgetc(fp);	// omit ' '
@@ -190,11 +176,9 @@ struct List *makeLists() {
 					}
 					ppid_s[i] = '\0';
 					node->ppid = atoi(ppid_s);
-					printf("node ppid is %d\n", node->ppid);
 
 					// init the linked list otherwise just append to the end
 					// tmp = lists[hash(node->pid)]; // this is wrong, together with struct List tmp; rather than using pointer
-					printf("hash is %d\n", hash(node->pid));
 					tmp = &lists[hash(node->pid)]; // this is correct 
 					if (tmp->head == NULL) {
 						// init dummy nodes if list is empty
@@ -206,7 +190,6 @@ struct List *makeLists() {
 						tmp->tail->next->next = node;
 						tmp->tail->next = node;
 					}
-					printf("node name is %s\n", tmp->head->next->name);
 								
 					ret = fclose(fp);
 					assert(ret == 0);
