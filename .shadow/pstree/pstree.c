@@ -230,6 +230,7 @@ void freeLists(struct List *lists) {
 		free(lists[i].tail);
 		lists[i].head = NULL;	// avoid dangling pointers
 		lists[i].tail = NULL;
+		free(lists[i]);
 	}
 	free(lists);
 	lists = NULL;
