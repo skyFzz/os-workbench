@@ -125,7 +125,7 @@ struct List *makeLists() {
 
 	errno = 0;
 	entry = readdir(dir);
-	while (entry) {
+	while (entry != NULL) {
 		assert(entry->d_type != DT_UNKNOWN);	// only some fs fully support d_type
 		if (entry->d_type == DT_DIR && entry->d_name[0] >= '0' && entry->d_name[0] <= '9') {
 			struct Node *node = (struct Node *)malloc(sizeof(struct Node)); 
@@ -207,8 +207,7 @@ struct List *makeLists() {
 		} 	
 		entry = readdir(dir);	
 	}
-	assert(errno == 0);
-	printf("hi");
+	assert(errno == 0);	// could be either EOF or error
 
 	ret = closedir(dir);
 	assert(ret == 0);
@@ -232,6 +231,7 @@ void freeLists(struct List *lists) {
 		lists[i].head = NULL;	// avoid dangling pointers
 		lists[i].tail = NULL;
 	}
+	free(lists);
 }
 
 int main(int argc, char *argv[]) {
