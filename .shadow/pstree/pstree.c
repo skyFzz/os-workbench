@@ -130,7 +130,7 @@ struct List *makeLists() {
 		if (entry->d_type == DT_DIR && entry->d_name[0] >= '0' && entry->d_name[0] <= '9') {
 			struct Node *node = (struct Node *)malloc(sizeof(struct Node)); 
 			node->next = NULL;
-			node->name = (char *)malloc(16 * sizeof(char));	// max length of process name
+			node->name = (char *)malloc(128 * sizeof(char));	// max length of process name
 
 			strncat(path, entry->d_name, 8);	// pid_max literal has 8 digits
 			strncat(path, "/", 2);
