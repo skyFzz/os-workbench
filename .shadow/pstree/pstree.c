@@ -219,7 +219,7 @@ void freeLists(struct List *lists) {
 	struct Node *nxt;
 	struct Node *tar;
 	for (int i = 0; i < HASH_SIZE; i++) {
-		if (lists[i].head == NULL) continue;
+		if (lists[i].head == NULL) continue;	// only free the allocated ones
 		tar = lists[i].head->next;
 		do {
 			nxt = tar->next;
@@ -230,7 +230,6 @@ void freeLists(struct List *lists) {
 		free(lists[i].tail);
 		lists[i].head = NULL;	// avoid dangling pointers
 		lists[i].tail = NULL;
-		free(lists[i]);
 	}
 	free(lists);
 	lists = NULL;
