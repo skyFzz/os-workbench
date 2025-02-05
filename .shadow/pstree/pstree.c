@@ -197,7 +197,7 @@ struct List *makeLists() {
 						tmp->tail->next->next = node;
 						tmp->tail->next = node;
 					}
-					printf("node name is %s\n", lists[hash(node->pid)]->head->next->name);
+					printf("node name is %s\n", tmp->head->next->name);
 								
 					ret = fclose(fp);
 					assert(ret == 0);
