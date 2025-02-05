@@ -119,14 +119,13 @@ struct List *makeLists() {
 	FILE *fp;	// $ulimit -Hn $1048576
 	char pid_s[8];
 	char ppid_s[8];
-	int i = 0;	// init
+	int i;
 
-	printf("hi\n");
 	for (i = 0; i < HASH_SIZE; i++) {
 		lists[i].head = NULL;
 		lists[i].tail= NULL;
 	}
-	printf("hi\n");
+	i = 0;
 
 	dir = opendir(path);
 	assert(dir);
