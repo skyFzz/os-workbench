@@ -223,6 +223,7 @@ void freeLists(struct List *lists) {
 		tar = lists[i].head->next;
 		do {
 			nxt = tar->next;
+			free(tar->name); // don't forget about name
 			free(tar);	
 			tar = nxt;
 		} while (tar != NULL);
