@@ -165,7 +165,7 @@ struct List *makeLists() {
 					printf("The name is %s\n", node->name);
 
 					// init the linked list otherwise just append to the end	
-					tmp = *(lists[hash(pid)]);
+					tmp = lists[hash(pid)];
 					if (tmp.head == NULL) {
 						tmp.head = (struct Node *)malloc(sizeof(struct Node));
 						tmp.tail = (struct Node *)malloc(sizeof(struct Node));
