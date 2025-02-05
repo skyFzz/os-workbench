@@ -15,20 +15,26 @@ bool P = false;
 bool N = false;
 bool V = false;
 
-// refer to CLRS p.246 on a left-child, right-sibling representation for rooted trees
 struct Node {
 	char *name;
 	pid_t pid;
 	pid_t ppid;
+	struct Node *next;
+
+	// refer to CLRS p.246 on a left-child, right-sibling representation for rooted trees
 	struct Node *parent;
 	struct Node *left;
 	struct Node *risi;
-	struct Node *next;
+};
+
+struct List {
+	struct Node *head;
+	struct Node *tail;
 };
 
 unsigned int hash(pid_t pid) {
 	return pid % HASH_SIZE;
-};
+}
 
 void usage(char *argv) {
 	printf("pstree: unsupported option '%s'\n", argv);
@@ -84,6 +90,7 @@ void getArgs(int argc, char *argv[]) {
 					V = true;
 				} else {
 					usage(argv[i]);
+					free(path); // free path before exiting
 					exit(-1);
 				}
 				free(path);
@@ -99,7 +106,10 @@ void getArgs(int argc, char *argv[]) {
   	assert(!argv[argc]);
 }
 
-void getNodes(struct Node *hashmap) {
+struct List *makeLists() {
+	struct List *lists = (struct List *)malloc(HASH_SIZE * sizeof(struct List));
+	assert(lists);
+	struct List *tmp;	// local worker
 	DIR *dir;
 	DIR *subdir;
 	char path[20] = "/proc/";	// worst case: /proc/1234567/stat
@@ -108,25 +118,28 @@ void getNodes(struct Node *hashmap) {
 	struct dirent *subent;
 	FILE *fp;	// $ulimit -Hn $1048576
 	char pid_s[8];
-	pid_t pid;
-	int i = 0;	// init
+	char ppid_s[8];
+	int i = 0; // init
 
 	dir = opendir(path);
-	assert(dir != NULL);
+	assert(dir);
 
 	errno = 0;
 	entry = readdir(dir);
 	while (entry != NULL) {
 		assert(entry->d_type != DT_UNKNOWN);	// only some fs fully support d_type
 		if (entry->d_type == DT_DIR && entry->d_name[0] >= '0' && entry->d_name[0] <= '9') {
-			struct Node node = malloc(sizeof(node)); 
+			struct Node *node = (struct Node *)malloc(sizeof(struct Node)); 
+			node->next = NULL;
+			node->name = (char *)malloc(128 * sizeof(char)); // on htis machine /proc/pid/stat can display over 15 bytes
+
 			strncat(path, entry->d_name, 8);	// pid_max literal has 8 digits
 			strncat(path, "/", 2);
-			subdir = opendir(path);
+			subdir = opendir(path); // /proc/pid/
 			assert(subdir != NULL);
 			errno = 0;
-			subent = readdir(dir);
-			while (subent != NULL) {
+			subent = readdir(subdir); // /proc/pid/stat
+			while (subent) {
 				if (strncmp(subent->d_name, "stat", 5) == 0) {
 					strncat(path, "stat", 5);
 					fp = fopen(path, "r");
@@ -134,22 +147,53 @@ void getNodes(struct Node *hashmap) {
 						fclose(fp);
 						exit(-1);
 					}
+
 					ret = fgetc(fp);
 					while(ret != ' ') {
 						pid_s[i++] = ret;
 						ret = fgetc(fp);
 					}
 					pid_s[i] = '\0';
-					pid = atoi(pid_s);
-					assert(pid != 0);
-					node.pid = pid;
+					node->pid = atoi(pid_s);
 					
-					// To do: fill other info for the node ds
+					i = 0;
+					ret = fgetc(fp);
+					ret = fgetc(fp);
+					while(ret != ')') {
+						node->name[i++] = ret;
+						ret = fgetc(fp);
+					}
+					node->name[i] = '\0';
 
-					insert(hashmap, hash(pid), node);
+					i = 0;
+					ret = fgetc(fp);	// omit ' '
+					ret = fgetc(fp);	// omit 'S'
+					ret = fgetc(fp);	// omit ' '
+					ret = fgetc(fp);	// get ppid
+					while(ret != ' ') {
+						ppid_s[i++] = ret;
+						ret = fgetc(fp);
+					}
+					ppid_s[i] = '\0';
+					node->ppid = atoi(ppid_s);
+
+					// init the linked list otherwise just append to the end
+					// tmp = lists[hash(node->pid)]; // this is wrong, together with struct List tmp; rather than using pointer
+					tmp = &lists[hash(node->pid)]; // this is correct 
+					if (tmp->head == NULL) {
+						// init dummy nodes if list is empty
+						tmp->head = (struct Node *)malloc(sizeof(struct Node));
+						tmp->tail = (struct Node *)malloc(sizeof(struct Node));
+						tmp->head->next = node;
+						tmp->tail->next = node;
+					} else {
+						tmp->tail->next->next = node;
+						tmp->tail->next = node;
+					}
 								
 					ret = fclose(fp);
 					assert(ret == 0);
+
 					i = 0;	// reset
 				}
 				subent = readdir(subdir);
@@ -162,31 +206,42 @@ void getNodes(struct Node *hashmap) {
 		} 	
 		entry = readdir(dir);	
 	}
-	assert(errno == 0);
+	assert(errno == 0);	// could be either EOF or error
 
 	ret = closedir(dir);
 	assert(ret == 0);
+
+	return lists;
 }
 
-void freeMap(struct Node *map) {
+void freeLists(struct List *lists) {
+	struct Node *nxt;
+	struct Node *tar;
 	for (int i = 0; i < HASH_SIZE; i++) {
-		if (map[i]) {
-			struct Node *cur = map[i];
-			struct Node *tmp = map[i].next;
-			while(tmp) {
-				free()
-			}
-		}
+		if (lists[i].head == NULL) continue;	// only free the allocated ones
+		tar = lists[i].head->next;
+		printf("head->next name is %s\n", tar->name);
+		do {
+			nxt = tar->next;
+			free(tar->name); // don't forget name
+			free(tar);	
+			tar = nxt;
+		} while (tar != NULL);
+		free(lists[i].head);	 
+		free(lists[i].tail);
+		lists[i].head = NULL;	// avoid dangling pointers
+		lists[i].tail = NULL;
 	}
+	free(lists);
+	lists = NULL;
 }
 
 int main(int argc, char *argv[]) {
-	struct Node hashmap[HASH_SIZE];
-	assert(hashmap != NULL);
-
 	getArgs(argc, argv);
-	getNodes(hashmap);
 
-	// free(hashmap); // unallocated object
-  	return 0;
+	struct List *lists = makeLists();
+	assert(lists != NULL);
+
+	freeLists(lists);
+  	return 1;
 }
