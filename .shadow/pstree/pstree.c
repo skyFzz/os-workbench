@@ -221,7 +221,6 @@ void freeLists(struct List *lists) {
 	struct Node *tar;
 	for (int i = 0; i < HASH_SIZE; i++) {
 		if (lists[i].head == NULL) { 
-			printf("seg fault %p\n", lists[i].head);
 			continue;	// only free the allocated ones
 		}
 		tar = lists[i].head->next;
