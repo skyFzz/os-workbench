@@ -219,6 +219,7 @@ void freeLists(struct List *lists) {
 	for (int i = 0; i < HASH_SIZE; i++) {
 		if (lists[i].head == NULL) { 
 			printf("hi\n");
+			printf("%d\n", i);
 			
 			continue;	// only free the allocated ones
 		}
