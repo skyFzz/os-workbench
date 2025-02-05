@@ -198,13 +198,28 @@ struct List *makeLists() {
 	return lists;
 }
 
-void freeList(struct List list[]) {
+void freeLists(struct List *lists) {
+	struct Node *nxt;
+	struct Node *tar;
+	for (int i = 0; i < HASH_SIZE; i++) {
+		if (lists[i].head == NULL) continue;
+		tar = lists[i].head->next;
+		do {
+			nxt = tar->next;
+			free(tar);	
+			tar = nxt;
+		} while (tar != NULL);
+		free(lists[i].head);	 
+		free(lists[i].tail);
+		lists[i].head = NULL;	// avoid dangling pointers
+		lists[i].tail = NULL;
+	}
 }
 
 int main(int argc, char *argv[]) {
 	struct List *lists = makeLists();
 	assert(lists != NULL);
 	getArgs(argc, argv);
-	free(lists);
+	freeLists(lists);
   	return 0;
 }
