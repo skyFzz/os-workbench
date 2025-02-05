@@ -155,7 +155,6 @@ struct List *makeLists() {
 					}
 					pid_s[i] = '\0';
 					node->pid = atoi(pid_s);
-					printf("pid is %d\n", node->pid);
 					
 					i = 0;
 					ret = fgetc(fp);
@@ -177,7 +176,6 @@ struct List *makeLists() {
 					}
 					ppid_s[i] = '\0';
 					node->ppid = atoi(ppid_s);
-					printf("ppid is %d\n", node->ppid);
 
 					// init the linked list otherwise just append to the end
 					tmp = lists[hash(node->pid)];
@@ -191,7 +189,6 @@ struct List *makeLists() {
 						tmp.tail->next->next = node;
 						tmp.tail->next = node;
 					}
-					printf("The name of the process %d is %s\n", tmp.head->next->pid, tmp.head->next->name);
 								
 					ret = fclose(fp);
 					assert(ret == 0);
