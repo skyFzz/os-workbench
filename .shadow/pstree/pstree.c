@@ -107,7 +107,7 @@ void getArgs(int argc, char *argv[]) {
 }
 
 struct List *makeLists() {
-	struct List *lists = (struct List *)malloc((HASH_SIZE + 1) * sizeof(struct List));
+	struct List *lists = (struct List *)malloc(HASH_SIZE * sizeof(struct List));
 	assert(lists);
 	struct List *tmp;	// local worker
 	DIR *dir;
@@ -122,7 +122,6 @@ struct List *makeLists() {
 	int i = 0;	// init
 
 	for (i = 0; i < HASH_SIZE; i++) {
-		printf("hi");
 		lists[i].head = NULL;
 		lists[i].tail= NULL;
 	}
@@ -144,7 +143,7 @@ struct List *makeLists() {
 			subdir = opendir(path);
 			assert(subdir != NULL);
 			errno = 0;
-			subent = readdir(dir);
+			subent = readdir(subdir);
 			while (subent) {
 				if (strncmp(subent->d_name, "stat", 5) == 0) {
 					strncat(path, "stat", 5);
