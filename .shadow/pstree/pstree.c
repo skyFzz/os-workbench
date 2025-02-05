@@ -146,7 +146,7 @@ struct List *makeLists() {
 			assert(subdir != NULL);
 			errno = 0;
 			subent = readdir(subdir);
-			printf("hi\n");
+			printf("d_name is %s\n", subent->d_name);
 			while (subent) {
 				if (strncmp(subent->d_name, "stat", 5) == 0) {
 					strncat(path, "stat", 5);
