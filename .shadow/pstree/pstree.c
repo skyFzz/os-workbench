@@ -160,6 +160,7 @@ struct List *makeLists() {
 						node->name[i++] = ret;
 						ret = fgetc(fp);
 					}
+					node->name[i] = '\0';
 
 					// init the linked list otherwise just append to the end
 					tmp = lists[hash(node->pid)];
