@@ -217,6 +217,7 @@ void freeLists(struct List *lists) {
 	struct Node *nxt;
 	struct Node *tar;
 	for (int i = 0; i < HASH_SIZE; i++) {
+		printf("name is %s\n", lists[i].head->next->name)
 		if (lists[i].head == NULL) { 
 			printf("hi\n");
 			printf("%d\n", i);
