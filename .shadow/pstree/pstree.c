@@ -172,7 +172,7 @@ struct List *makeLists() {
 					tmp.tail->next->next = node;
 					tmp.tail->next = node;
 					node->next = NULL;
-					printf("The name is %s\n", tmp.head->name);
+					printf("The name is %s\n", tmp.head->next->name);
 								
 					ret = fclose(fp);
 					assert(ret == 0);
