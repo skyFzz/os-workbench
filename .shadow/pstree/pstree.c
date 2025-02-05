@@ -151,6 +151,7 @@ struct List *makeLists() {
 				if (strncmp(subent->d_name, "stat", 5) == 0) {
 					printf("hi\n");
 					strncat(path, "stat", 5);
+					printf("hi\n");
 					fp = fopen(path, "r");
 					if (!fp) {
 						fclose(fp);
@@ -162,6 +163,7 @@ struct List *makeLists() {
 						pid_s[i++] = ret;
 						ret = fgetc(fp);
 					}
+					printf("hi\n");
 					pid_s[i] = '\0';
 					node->pid = atoi(pid_s);
 					printf("node->pid is %d\n", node->pid);
