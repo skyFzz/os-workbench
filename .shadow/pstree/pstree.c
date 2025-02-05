@@ -232,6 +232,7 @@ void freeLists(struct List *lists) {
 		lists[i].tail = NULL;
 	}
 	free(lists);
+	lists = NULL;
 }
 
 int main(int argc, char *argv[]) {
