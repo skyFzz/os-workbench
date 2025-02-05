@@ -116,7 +116,6 @@ struct List *makeLists() {
 	struct dirent *subent;
 	FILE *fp;	// $ulimit -Hn $1048576
 	char pid_s[8];
-	pid_t pid;
 	int i = 0;	// init
 
 	dir = opendir(path);
@@ -151,9 +150,7 @@ struct List *makeLists() {
 						ret = fgetc(fp);
 					}
 					pid_s[i] = '\0';
-					pid = atoi(pid_s);
-					assert(pid != 0);
-					node->pid = pid;
+					node->pid = atoi(pid_s);
 					
 					i = 0;
 					ret = fgetc(fp);
@@ -165,7 +162,8 @@ struct List *makeLists() {
 					printf("The name is %s\n", node->name);
 
 					// init the linked list otherwise just append to the end	
-					tmp = lists[hash(pid)];
+					tmp = lists[hash(node->pid)];
+					// init dummy nodes if hash key is new
 					if (tmp.head == NULL) {
 						tmp.head = (struct Node *)malloc(sizeof(struct Node));
 						tmp.tail = (struct Node *)malloc(sizeof(struct Node));
@@ -178,6 +176,7 @@ struct List *makeLists() {
 								
 					ret = fclose(fp);
 					assert(ret == 0);
+
 					i = 0;	// reset
 				}
 				subent = readdir(subdir);
@@ -217,9 +216,11 @@ void freeLists(struct List *lists) {
 }
 
 int main(int argc, char *argv[]) {
+	getArgs(argc, argv);
+
 	struct List *lists = makeLists();
 	assert(lists != NULL);
-	getArgs(argc, argv);
+
 	freeLists(lists);
-  	return 0;
+  	return 1;
 }
