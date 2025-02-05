@@ -128,7 +128,7 @@ struct List *makeLists() {
 		assert(entry->d_type != DT_UNKNOWN);	// only some fs fully support d_type
 		if (entry->d_type == DT_DIR && entry->d_name[0] >= '0' && entry->d_name[0] <= '9') {
 			struct Node *node = (struct Node *)malloc(sizeof(struct Node)); 
-			node.name = (char *)malloc(16 * sizeof(char));	// max length of process name
+			node->name = (char *)malloc(16 * sizeof(char));	// max length of process name
 
 			strncat(path, entry->d_name, 8);	// pid_max literal has 8 digits
 			strncat(path, "/", 2);
@@ -165,7 +165,7 @@ struct List *makeLists() {
 					printf("The name is %s\n", node->name);
 
 					// init the linked list otherwise just append to the end	
-					tmp = *(list[hash(pid)]);
+					tmp = *(lists[hash(pid)]);
 					if (tmp.head == NULL) {
 						tmp.head = (struct Node *)malloc(sizeof(struct Node));
 						tmp.tail = (struct Node *)malloc(sizeof(struct Node));
@@ -194,14 +194,11 @@ struct List *makeLists() {
 
 	ret = closedir(dir);
 	assert(ret == 0);
+
+	return lists;
 }
 
 void freeList(struct List list[]) {
-	for (int i = 0; i < HASH_SIZE; i++) {
-		if (list[i]) {
-			
-		}
-	}
 }
 
 int main(int argc, char *argv[]) {
