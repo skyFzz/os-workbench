@@ -90,6 +90,7 @@ void getArgs(int argc, char *argv[]) {
 					V = true;
 				} else {
 					usage(argv[i]);
+					free(path); // free path before exiting
 					exit(-1);
 				}
 				free(path);
