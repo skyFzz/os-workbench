@@ -26,6 +26,11 @@ struct Node {
 	struct Node *next;
 };
 
+struct List {
+	struct Node *head;
+	struct Node *tail;
+}
+
 unsigned int hash(pid_t pid) {
 	return pid % HASH_SIZE;
 };
@@ -99,7 +104,7 @@ void getArgs(int argc, char *argv[]) {
   	assert(!argv[argc]);
 }
 
-void getNodes(struct Node *hashmap) {
+void getProcs(struct List **list) {
 	DIR *dir;
 	DIR *subdir;
 	char path[20] = "/proc/";	// worst case: /proc/1234567/stat
@@ -107,8 +112,10 @@ void getNodes(struct Node *hashmap) {
 	struct dirent *entry;
 	struct dirent *subent;
 	FILE *fp;	// $ulimit -Hn $1048576
-	char pid[8];
+	char pid_s[8];
+	pid_t pid;
 	int i = 0;	// init
+	struct List tmp = (struct List)malloc(sizeof(struct List));
 
 	dir = opendir(path);
 	assert(dir != NULL);
@@ -118,6 +125,9 @@ void getNodes(struct Node *hashmap) {
 	while (entry != NULL) {
 		assert(entry->d_type != DT_UNKNOWN);	// only some fs fully support d_type
 		if (entry->d_type == DT_DIR && entry->d_name[0] >= '0' && entry->d_name[0] <= '9') {
+			struct Node node = (struct Node)malloc(sizeof(node)); 
+			node.name = (char *)malloc(16 * sizeof(char));	// max length of process name
+
 			strncat(path, entry->d_name, 8);	// pid_max literal has 8 digits
 			strncat(path, "/", 2);
 			subdir = opendir(path);
@@ -132,13 +142,38 @@ void getNodes(struct Node *hashmap) {
 						fclose(fp);
 						exit(-1);
 					}
+
 					ret = fgetc(fp);
 					while(ret != ' ') {
-						pid[i++] = ret;
+						pid_s[i++] = ret;
 						ret = fgetc(fp);
 					}
-					pid[i] = '\0';
-					printf("pid is %s\n", pid);
+					pid_s[i] = '\0';
+					pid = atoi(pid_s);
+					assert(pid != 0);
+					node.pid = pid;
+					
+					i = 0;
+					ret = fgetc(fp);
+					ret = fgetc(fp);
+					while(ret != ')') {
+						node.name[i++] = ret;
+						ret = fgetc(fp);
+					}
+					printf("The name is %s\n", node.name);
+
+					// init the linked list otherwise just append to the end	
+					tmp = list[hash(pid)];
+					if (tmp->head == NULL) {
+						tmp->head = (struct Node)malloc(sizeof(struct Node));
+						tmp->tail = (struct Node)malloc(sizeof(struct Node));
+						tmp->head.next = tmp->tail;
+						tmp->tail.next = tmp->head;
+					}
+					list[hash(pid)]->tail.next.next = node;
+					list[hash(pid)]->tail.next = node;
+					node.next = NULL;
+								
 					ret = fclose(fp);
 					assert(ret == 0);
 					i = 0;	// reset
@@ -159,12 +194,24 @@ void getNodes(struct Node *hashmap) {
 	assert(ret == 0);
 }
 
+void freeMap(struct Node *map) {
+	for (int i = 0; i < HASH_SIZE; i++) {
+		if (map[i]) {
+			struct Node *cur = map[i];
+			struct Node *tmp = map[i].next;
+			while(tmp) {
+				free()
+			}
+		}
+	}
+}
+
 int main(int argc, char *argv[]) {
-	struct Node hashmap[HASH_SIZE];
-	assert(hashmap != NULL);
+	struct List list[] = (struct List *)malloc(HASH_SIZE * sizeof(struct List));
+	assert(list != NULL);
 
 	getArgs(argc, argv);
-	getNodes(hashmap);
+	getProcs(list);
 
 	// free(hashmap); // unallocated object
   	return 0;
