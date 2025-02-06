@@ -307,7 +307,7 @@ int main(int argc, char *argv[]) {
 
 	struct Node *root = makeTree(lists);	
 	printf("fborn child of root is %s\n", root->fborn->name);
-//	printf("next child of root is %s\n", root->fborn->sib->name);
+	printf("next child of root is %s\n", root->fborn->sib->name);
 
 	free(root);
 	freeLists(lists);
