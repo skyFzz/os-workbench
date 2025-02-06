@@ -248,7 +248,7 @@ struct Node *makeTree(struct List *lists) {
 					while (tmp->sib != NULL) tmp = tmp->sib;
 					tmp->sib = child;
 				}
-				printf("child name %s\n", tmp->name);
+				printf("child of root is %s\n", root->fborn->name);
 				continue;
 			}
 			// find mom
