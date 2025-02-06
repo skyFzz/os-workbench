@@ -240,11 +240,13 @@ struct Node *makeTree(struct List *lists) {
 					while (tmp->sib != NULL) tmp = tmp->sib;
 					tmp->sib = child;
 				}
+				printf("child name %s\n", tmp->name);
 				continue;
 			}
 			// find mom
 			for (mom = lists[hash(child->ppid)].head; mom != NULL; mom = mom->next) {
 				printf("hi\n");
+				mom = mom->next;
 				if (mom->pid == child->ppid) {
 					child->mom = mom;
 					if (mom->fborn == NULL) {
@@ -256,6 +258,7 @@ struct Node *makeTree(struct List *lists) {
 					}
 					break;
 				}
+				printf("mom name %s\n", mom->name);
 			}
 			
 		}
