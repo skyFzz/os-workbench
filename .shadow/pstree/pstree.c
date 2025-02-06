@@ -241,12 +241,10 @@ struct Node *makeTree(struct List *lists) {
 			// edge casei, mom is root
 			if (child->ppid == 0) {
 				child->mom = root;
-				tmp = root->fborn;
-				if (tmp == NULL) {
-					tmp = child;
-					printf("child of root is %s\n", tmp->name);
-					exit(-1);
+				if (root->fborn == NULL) {
+					root->fborn = child;
 				} else {
+					tmp = root->fborn;
 					while (tmp->sib != NULL) tmp = tmp->sib;
 					tmp->sib = child;
 				}
