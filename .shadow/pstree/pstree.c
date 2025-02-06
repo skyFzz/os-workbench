@@ -224,6 +224,11 @@ struct Node *makeTree(struct List *lists) {
 	struct Node *child;
 	struct Node *mom;
 	struct Node *tmp;
+
+	root->pid = 0;
+	root->ppid = -1;
+	root->name = "root";
+	root->next = NULL;
 	root->mom = NULL;
 	root->sib = NULL;
 	root->fborn = NULL;
