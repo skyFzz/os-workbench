@@ -106,6 +106,7 @@ void getArgs(int argc, char *argv[]) {
   	assert(!argv[argc]);
 }
 
+
 struct List *makeLists() {
 	struct List *lists = (struct List *)malloc(HASH_SIZE * sizeof(struct List));
 	assert(lists);
@@ -120,6 +121,7 @@ struct List *makeLists() {
 	char pid_s[8];
 	char ppid_s[8];
 	int i = 0; // init
+
 
 	dir = opendir(path);
 	assert(dir);
@@ -242,6 +244,8 @@ struct Node *makeTree(struct List *lists) {
 				continue;
 			}
 			// find mom
+			mom = lists[hash(child->ppid)].head;
+			printf("hi\n");
 			for (mom = lists[hash(child->ppid)].head; mom != NULL; mom = mom->next) {
 				mom = mom->next;
 				if (mom->pid == child->ppid) {
