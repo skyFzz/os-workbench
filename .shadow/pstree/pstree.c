@@ -255,6 +255,7 @@ struct Node *makeTree(struct List *lists) {
 						mom->fborn = child;
 					} else {
 						tmp = mom->fborn;
+						printf("hi\n");
 						
 						printf("fborn name is %s\n", tmp->name);
 						while (tmp->sib != NULL) {
