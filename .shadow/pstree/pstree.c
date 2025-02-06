@@ -21,10 +21,10 @@ struct Node {
 	pid_t ppid;
 	struct Node *next;
 
-	// refer to CLRS p.246 on a left-child, right-sibling representation for rooted trees
-	struct Node *parent;
-	struct Node *left;
-	struct Node *risi;
+	// refer to CLRS p.246 on a left-child, right-sibling representation for a tree ds
+	struct Node *mom;
+	struct Node *fborn;
+	struct Node *sib;
 };
 
 struct List {
@@ -214,13 +214,45 @@ struct List *makeLists() {
 	return lists;
 }
 
-void makeTree(struct List *lists) {
-	/*
+struct Node *makeTree(struct List *lists) {
+	struct Node *root = (struct Node *)malloc(sizeof(struct Node));
+	struct Node *child;
+	struct Node *mom;
+	struct Node *tmp;
+	root->mom = NULL;
+	root->sib = NULL;
+	
+	// traverse hashmap
 	for (int i = 0; i < HASH_SIZE; i++) {
-		
+		// traverse non-empty list
+		for (child = lists[i].head; child != NULL; child = child.next) {
+			child = child.next;
+			// edge case
+			if (child->ppid == 0) {
+				child.mom = root;
+				tmp = root->fborn;
+				while (tmp != NULL) tmp = tmp.sib;
+				tmp.sib = child;
+				continue;
+			}
+			// find mom
+			for (mom = lists[hash(child->ppid)].head; mom != NULL; mom = mom.next) {
+				if (mom->pid == child->ppid) {
+					child->mom = mom;
+					if (mom->fborn == NULL) {
+						mom->fborn = child;
+					} else {
+						tmp = mom->fborn;
+						while (tmp->sib != NULL) tmp = tmp.sib;
+						tmp.sib = child;
+					}
+				}
+			}
+			
+		}
 	}
-	*/
 
+	return root;
 }
 
 void freeLists(struct List *lists) {
@@ -250,6 +282,10 @@ int main(int argc, char *argv[]) {
 
 	struct List *lists = makeLists();
 	assert(lists != NULL);
+
+	struct Node *root = makeTree(lists);	
+	printf("fborn child of root is %s\n", root->fborn->name);
+	printf("next child of root is %s\n", root->fborn->sib->name);
 
 	freeLists(lists);
   	return 1;
