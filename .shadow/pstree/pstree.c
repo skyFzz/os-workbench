@@ -132,7 +132,9 @@ struct List *makeLists() {
 			struct Node *node = (struct Node *)malloc(sizeof(struct Node)); 
 			node->next = NULL;
 			node->name = (char *)malloc(128 * sizeof(char)); // on this machine /proc/pid/stat can display over 15 bytes
-			node->mom = NULL;
+			
+			// must init all fields even not used here
+			node->mom = NULL;	
 			node->fborn = NULL;
 			node->sib = NULL;
 
@@ -300,7 +302,7 @@ int main(int argc, char *argv[]) {
 	assert(lists != NULL);
 
 	struct Node *root = makeTree(lists);	
-//	printf("fborn child of root is %s\n", root->fborn->name);
+	printf("fborn child of root is %s\n", root->fborn->name);
 //	printf("next child of root is %s\n", root->fborn->sib->name);
 
 	free(root);
