@@ -284,6 +284,7 @@ int main(int argc, char *argv[]) {
 	assert(lists != NULL);
 
 	struct Node *root = makeTree(lists);	
+	printf("hi\n");
 	printf("fborn child of root is %s\n", root->fborn->name);
 	printf("next child of root is %s\n", root->fborn->sib->name);
 
