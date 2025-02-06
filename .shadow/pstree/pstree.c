@@ -257,17 +257,13 @@ struct Node *makeTree(struct List *lists) {
 					} else {
 						printf("mom name is %s\n", mom->name);
 						tmp = mom->fborn;
-						printf("he\n");
 						while (tmp->sib != NULL) {
-							printf("hi\n");
 							tmp = tmp->sib;
 						}
-						printf("he\n");
 						tmp->sib = child;
 					}
 					break;
 				}
-				printf("mom name %s\n", mom->name);
 			}
 			
 		}
