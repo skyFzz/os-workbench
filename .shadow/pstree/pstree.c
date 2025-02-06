@@ -221,6 +221,7 @@ struct Node *makeTree(struct List *lists) {
 	struct Node *tmp;
 	root->mom = NULL;
 	root->sib = NULL;
+	root->fborn = NULL;
 	
 	// traverse hashmap
 	for (int i = 0; i < HASH_SIZE; i++) {
@@ -230,10 +231,11 @@ struct Node *makeTree(struct List *lists) {
 			// edge case
 			if (child->ppid == 0) {
 				child->mom = root;
+				printf("hi\n");
+
 				tmp = root->fborn;
 				while (tmp != NULL) tmp = tmp->sib;
 				tmp->sib = child;
-				printf("hi\n");
 				continue;
 			}
 			// find mom
