@@ -244,11 +244,11 @@ struct Node *makeTree(struct List *lists) {
 				tmp = root->fborn;
 				if (tmp == NULL) {
 					tmp = child;
+					printf("child of root is %s\n", root->fborn->name);
 				} else {
 					while (tmp->sib != NULL) tmp = tmp->sib;
 					tmp->sib = child;
 				}
-				printf("child of root is %s\n", root->fborn->name);
 				continue;
 			}
 			// find mom
