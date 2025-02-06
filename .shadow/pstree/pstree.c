@@ -215,7 +215,11 @@ struct List *makeLists() {
 }
 
 void makeTree(struct List *lists) {
-	
+	/*
+	for (int i = 0; i < HASH_SIZE; i++) {
+		
+	}
+	*/
 
 }
 
@@ -225,9 +229,9 @@ void freeLists(struct List *lists) {
 	for (int i = 0; i < HASH_SIZE; i++) {
 		if (lists[i].head == NULL) continue;	// only free the allocated ones
 		tar = lists[i].head->next;
-		printf("proc %d name is %s and parent is %d\n", tar->pid, tar->name, tar->ppid);
 		do {
 			nxt = tar->next;
+			printf("proc %d name is %s and parent is %d\n", tar->pid, tar->name, tar->ppid);
 			free(tar->name); // don't forget name
 			free(tar);	
 			tar = nxt;
