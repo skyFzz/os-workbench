@@ -290,7 +290,7 @@ int main(int argc, char *argv[]) {
 	printf("fborn child of root is %s\n", root->fborn->name);
 	printf("next child of root is %s\n", root->fborn->sib->name);
 
-	free(root)
+	free(root);
 	freeLists(lists);
   	return 1;
 }
