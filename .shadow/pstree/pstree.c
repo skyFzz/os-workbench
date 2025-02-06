@@ -251,7 +251,7 @@ struct Node *makeTree(struct List *lists) {
 				if (mom->pid == child->ppid) {
 					child->mom = mom;
 					if (mom->fborn == NULL) {
-						printf("hi\n");
+						printf("he\n");
 						mom->fborn = child;
 					} else {
 						tmp = mom->fborn;
