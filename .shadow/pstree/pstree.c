@@ -225,26 +225,26 @@ struct Node *makeTree(struct List *lists) {
 	// traverse hashmap
 	for (int i = 0; i < HASH_SIZE; i++) {
 		// traverse non-empty list
-		for (child = lists[i].head; child != NULL; child = child.next) {
-			child = child.next;
+		for (child = lists[i].head; child != NULL; child = child->next) {
+			child = child->next;
 			// edge case
 			if (child->ppid == 0) {
 				child.mom = root;
 				tmp = root->fborn;
-				while (tmp != NULL) tmp = tmp.sib;
-				tmp.sib = child;
+				while (tmp != NULL) tmp = tmp->sib;
+				tmp->sib = child;
 				continue;
 			}
 			// find mom
-			for (mom = lists[hash(child->ppid)].head; mom != NULL; mom = mom.next) {
+			for (mom = lists[hash(child->ppid)].head; mom != NULL; mom = mom->next) {
 				if (mom->pid == child->ppid) {
 					child->mom = mom;
 					if (mom->fborn == NULL) {
 						mom->fborn = child;
 					} else {
 						tmp = mom->fborn;
-						while (tmp->sib != NULL) tmp = tmp.sib;
-						tmp.sib = child;
+						while (tmp->sib != NULL) tmp = tmp->sib;
+						tmp->sib = child;
 					}
 				}
 			}
