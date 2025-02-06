@@ -244,7 +244,8 @@ struct Node *makeTree(struct List *lists) {
 				tmp = root->fborn;
 				if (tmp == NULL) {
 					tmp = child;
-					printf("child of root is %s\n", root->fborn->name);
+					printf("child of root is %s\n", tmp->name);
+					exit(-1);
 				} else {
 					while (tmp->sib != NULL) tmp = tmp->sib;
 					tmp->sib = child;
