@@ -230,6 +230,8 @@ struct Node *makeTree(struct List *lists) {
 			// edge case
 			if (child->ppid == 0) {
 				child->mom = root;
+				printf("hi\n");
+
 				tmp = root->fborn;
 				while (tmp != NULL) tmp = tmp->sib;
 				tmp->sib = child;
@@ -288,6 +290,7 @@ int main(int argc, char *argv[]) {
 	printf("fborn child of root is %s\n", root->fborn->name);
 	printf("next child of root is %s\n", root->fborn->sib->name);
 
+	free(root)
 	freeLists(lists);
   	return 1;
 }
