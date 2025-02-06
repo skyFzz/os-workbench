@@ -21,10 +21,10 @@ struct Node {
 	pid_t ppid;
 	struct Node *next;
 
-	// refer to CLRS p.246 on a left-child, right-sibling representation for rooted trees
-	struct Node *parent;
-	struct Node *left;
-	struct Node *risi;
+	// refer to CLRS p.246 on a left-child, right-sibling representation for a tree ds
+	struct Node *mom;
+	struct Node *fborn;
+	struct Node *sib;
 };
 
 struct List {
@@ -131,7 +131,12 @@ struct List *makeLists() {
 		if (entry->d_type == DT_DIR && entry->d_name[0] >= '0' && entry->d_name[0] <= '9') {
 			struct Node *node = (struct Node *)malloc(sizeof(struct Node)); 
 			node->next = NULL;
-			node->name = (char *)malloc(128 * sizeof(char)); // on htis machine /proc/pid/stat can display over 15 bytes
+			node->name = (char *)malloc(128 * sizeof(char)); // on this machine /proc/pid/stat can display over 15 bytes
+			
+			// must init all fields even not used here
+			node->mom = NULL;	
+			node->fborn = NULL;
+			node->sib = NULL;
 
 			strncat(path, entry->d_name, 8);	// pid_max literal has 8 digits
 			strncat(path, "/", 2);
@@ -214,13 +219,71 @@ struct List *makeLists() {
 	return lists;
 }
 
+struct Node *makeTree(struct List *lists) {
+	struct Node *root = (struct Node *)malloc(sizeof(struct Node));
+	struct Node *child;
+	struct Node *mom;
+	struct Node *tmp;
+
+	root->pid = 0;
+	root->ppid = -1;
+	root->name = "root";
+	root->next = NULL;
+	root->mom = NULL;
+	root->sib = NULL;
+	root->fborn = NULL;
+	
+	// traverse hashmap
+	for (int i = 0; i < HASH_SIZE; i++) {
+		// traverse non-empty list
+		for (child = lists[i].head; child != NULL; child = child->next) {
+			child = child->next;
+			// edge casei, mom is root
+			if (child->ppid == 0) {
+				child->mom = root;
+				if (root->fborn == NULL) {
+					root->fborn = child;
+				} else {
+					tmp = root->fborn;
+					while (tmp->sib != NULL) tmp = tmp->sib;
+					tmp->sib = child;
+				}
+				continue;
+			}
+			// find mom
+			printf("child name %s\n", child->name);
+			printf("child pid %d\n", child->pid);
+			printf("child ppid %d\n", child->ppid);
+			for (mom = lists[hash(child->ppid)].head; mom != NULL; mom = mom->next) {
+				mom = mom->next;
+				if (mom->pid == child->ppid) {
+					child->mom = mom;
+					if (mom->fborn == NULL) {
+						mom->fborn = child;
+					} else {
+						printf("mom name is %s\n", mom->name);
+						tmp = mom->fborn;
+						while (tmp->sib != NULL) {
+							tmp = tmp->sib;
+						}
+						tmp->sib = child;
+					}
+					break;
+				}
+			}
+			
+		}
+	}
+
+	return root;
+}
+
 void freeLists(struct List *lists) {
 	struct Node *nxt;
 	struct Node *tar;
 	for (int i = 0; i < HASH_SIZE; i++) {
 		if (lists[i].head == NULL) continue;	// only free the allocated ones
 		tar = lists[i].head->next;
-		printf("head->next name is %s\n", tar->name);
 		do {
 			nxt = tar->next;
 			free(tar->name); // don't forget name
@@ -242,6 +305,13 @@ int main(int argc, char *argv[]) {
 	struct List *lists = makeLists();
 	assert(lists != NULL);
 
+	struct Node *root = makeTree(lists);	
+	printf("fborn child of root is %s\n", root->fborn->name);
+	printf("next child of root is %s\n", root->fborn->sib->name);
+	printf("fborn child of systemd is %s\n", root->fborn->fborn->name);
+	printf("next child of systemd is %s\n", root->fborn->fborn->sib->name);
+
+	free(root);
 	freeLists(lists);
   	return 1;
 }
