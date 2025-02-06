@@ -280,7 +280,6 @@ void freeLists(struct List *lists) {
 		tar = lists[i].head->next;
 		do {
 			nxt = tar->next;
-			printf("proc %d name is %s and parent is %d\n", tar->pid, tar->name, tar->ppid);
 			free(tar->name); // don't forget name
 			free(tar);	
 			tar = nxt;
