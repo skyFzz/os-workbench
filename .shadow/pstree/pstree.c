@@ -246,15 +246,16 @@ struct Node *makeTree(struct List *lists) {
 			// find mom
 			mom = lists[hash(child->ppid)].head;
 			mom = mom->next;
-			printf("hi\n");
 			for (mom = lists[hash(child->ppid)].head; mom != NULL; mom = mom->next) {
 				mom = mom->next;
 				if (mom->pid == child->ppid) {
 					child->mom = mom;
 					if (mom->fborn == NULL) {
+						printf("hi\n");
 						mom->fborn = child;
 					} else {
 						tmp = mom->fborn;
+						printf("hi\n");
 						while (tmp->sib != NULL) tmp = tmp->sib;
 						tmp->sib = child;
 					}
