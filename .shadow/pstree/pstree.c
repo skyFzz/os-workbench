@@ -234,8 +234,12 @@ struct Node *makeTree(struct List *lists) {
 				printf("hi\n");
 
 				tmp = root->fborn;
-				while (tmp != NULL) tmp = tmp->sib;
-				tmp->sib = child;
+				if (tmp == NULL) {
+					tmp = child;
+				} else {
+					while (tmp->sib != NULL) tmp = tmp->sib;
+					tmp->sib = child;
+				}
 				continue;
 			}
 			// find mom
@@ -249,6 +253,7 @@ struct Node *makeTree(struct List *lists) {
 						while (tmp->sib != NULL) tmp = tmp->sib;
 						tmp->sib = child;
 					}
+					break;
 				}
 			}
 			
