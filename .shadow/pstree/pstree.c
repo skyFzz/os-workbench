@@ -308,6 +308,8 @@ int main(int argc, char *argv[]) {
 	struct Node *root = makeTree(lists);	
 	printf("fborn child of root is %s\n", root->fborn->name);
 	printf("next child of root is %s\n", root->fborn->sib->name);
+	printf("fborn child of systemd is %s\n", root->fborn->fborn->name);
+	printf("next child of systemd is %s\n", root->fborn->fborn->sib->name);
 
 	free(root);
 	freeLists(lists);
