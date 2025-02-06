@@ -245,7 +245,7 @@ struct Node *makeTree(struct List *lists) {
 			}
 			// find mom
 			printf("child name %s\n", child->name);
-			printf("child ppid%s\n", child->ppid);
+			printf("child ppid%d\n", child->ppid);
 			for (mom = lists[hash(child->ppid)].head; mom != NULL; mom = mom->next) {
 				mom = mom->next;
 				if (mom->pid == child->ppid) {
