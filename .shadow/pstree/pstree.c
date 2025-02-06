@@ -230,11 +230,10 @@ struct Node *makeTree(struct List *lists) {
 			// edge case
 			if (child->ppid == 0) {
 				child->mom = root;
-				printf("hi\n");
-
 				tmp = root->fborn;
 				while (tmp != NULL) tmp = tmp->sib;
 				tmp->sib = child;
+				printf("hi\n");
 				continue;
 			}
 			// find mom
