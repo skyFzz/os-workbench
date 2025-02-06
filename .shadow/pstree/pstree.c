@@ -253,7 +253,6 @@ struct Node *makeTree(struct List *lists) {
 				if (mom->pid == child->ppid) {
 					child->mom = mom;
 					if (mom->fborn == NULL) {
-						printf("he\n");
 						mom->fborn = child;
 					} else {
 						printf("mom name is %s\n", mom->name);
@@ -302,9 +301,8 @@ int main(int argc, char *argv[]) {
 	assert(lists != NULL);
 
 	struct Node *root = makeTree(lists);	
-	printf("hi\n");
-	printf("fborn child of root is %s\n", root->fborn->name);
-	printf("next child of root is %s\n", root->fborn->sib->name);
+//	printf("fborn child of root is %s\n", root->fborn->name);
+//	printf("next child of root is %s\n", root->fborn->sib->name);
 
 	free(root);
 	freeLists(lists);
