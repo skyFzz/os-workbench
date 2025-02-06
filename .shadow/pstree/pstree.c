@@ -256,7 +256,10 @@ struct Node *makeTree(struct List *lists) {
 					} else {
 						tmp = mom->fborn;
 						printf("hi\n");
-						while (tmp->sib != NULL) tmp = tmp->sib;
+						while (tmp->sib != NULL) {}
+							printf("hi\n");
+							tmp = tmp->sib;
+						}
 						printf("he\n");
 						tmp->sib = child;
 					}
