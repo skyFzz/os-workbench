@@ -230,7 +230,7 @@ struct Node *makeTree(struct List *lists) {
 		// traverse non-empty list
 		for (child = lists[i].head; child != NULL; child = child->next) {
 			child = child->next;
-			// edge case
+			// edge casei, mom is root
 			if (child->ppid == 0) {
 				child->mom = root;
 				tmp = root->fborn;
@@ -244,8 +244,7 @@ struct Node *makeTree(struct List *lists) {
 				continue;
 			}
 			// find mom
-			mom = lists[hash(child->ppid)].head;
-			mom = mom->next;
+			printf("child name %s\n", child->name);
 			for (mom = lists[hash(child->ppid)].head; mom != NULL; mom = mom->next) {
 				mom = mom->next;
 				if (mom->pid == child->ppid) {
@@ -254,6 +253,7 @@ struct Node *makeTree(struct List *lists) {
 						printf("he\n");
 						mom->fborn = child;
 					} else {
+						printf("mom name is %s\n", mom->name);
 						tmp = mom->fborn;
 						printf("hi\n");
 						
