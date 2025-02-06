@@ -229,7 +229,7 @@ struct Node *makeTree(struct List *lists) {
 			child = child->next;
 			// edge case
 			if (child->ppid == 0) {
-				child.mom = root;
+				child->mom = root;
 				tmp = root->fborn;
 				while (tmp != NULL) tmp = tmp->sib;
 				tmp->sib = child;
