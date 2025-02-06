@@ -106,7 +106,6 @@ void getArgs(int argc, char *argv[]) {
   	assert(!argv[argc]);
 }
 
-
 struct List *makeLists() {
 	struct List *lists = (struct List *)malloc(HASH_SIZE * sizeof(struct List));
 	assert(lists);
@@ -122,7 +121,6 @@ struct List *makeLists() {
 	char ppid_s[8];
 	int i = 0; // init
 
-
 	dir = opendir(path);
 	assert(dir);
 
@@ -133,7 +131,10 @@ struct List *makeLists() {
 		if (entry->d_type == DT_DIR && entry->d_name[0] >= '0' && entry->d_name[0] <= '9') {
 			struct Node *node = (struct Node *)malloc(sizeof(struct Node)); 
 			node->next = NULL;
-			node->name = (char *)malloc(128 * sizeof(char)); // on htis machine /proc/pid/stat can display over 15 bytes
+			node->name = (char *)malloc(128 * sizeof(char)); // on this machine /proc/pid/stat can display over 15 bytes
+			node->mom = NULL;
+			node->fborn = NULL;
+			node->sib = NULL;
 
 			strncat(path, entry->d_name, 8);	// pid_max literal has 8 digits
 			strncat(path, "/", 2);
