@@ -7,5 +7,5 @@ export ARCH := x86_64-qemu
 endif
 
 include $(AM_HOME)/Makefile
-include ../oslabs.mk
-image: git
+#include ../oslabs.mk
+#image: git
