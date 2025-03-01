@@ -47,7 +47,7 @@ char *strncpy(char *dst, const char *src, size_t n) {
 	stpncpy(dst, src, n);
 	return dst;
 	*/
-	char *tmp = dest;
+	char *tmp = dst;
 	while (n) {
 		if ((*tmp = *src) != 0)
 			src++;
@@ -215,7 +215,7 @@ int memcmp(const void *s1, const void *s2, size_t n) {
 	const unsigned char *su1, *su2;
 	int res = 0;
 
-	for (su1 = s1, su2 = s2; 0 < count; ++su1, ++su2, count--)
+	for (su1 = s1, su2 = s2; 0 < n; ++su1, ++su2, n--)
 		if ((res = *su1 - *su2) != 0)
 			break;
 	return res;

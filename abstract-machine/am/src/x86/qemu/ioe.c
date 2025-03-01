@@ -7,6 +7,7 @@
 #define COM1 0x3f8
 
 static int uart_init() {
+  printf("Initializing UART...\n");
   outb(COM1 + 2, 0);
   outb(COM1 + 3, 0x80);
   outb(COM1 + 0, 115200 / 9600);
@@ -16,6 +17,7 @@ static int uart_init() {
   outb(COM1 + 1, 0x01);
   inb (COM1 + 2);
   inb (COM1 + 0);
+  printf("UART initialized...\n");
   return 0;
 }
 
@@ -24,6 +26,8 @@ static void uart_config(AM_UART_CONFIG_T *cfg) {
 }
 
 static void uart_tx(AM_UART_TX_T *send) {
+  printf("Sending character: %c\n", send->data);
+  while ((inb(COM1 + 5) & 0x20) == 0);
   outb(COM1, send->data);
 }
 

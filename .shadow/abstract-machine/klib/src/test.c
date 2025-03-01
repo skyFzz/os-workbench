@@ -13,7 +13,7 @@ int main() {
 	printf("a: %s\n", a);
 	printf("b: %s\n", b);
 	printf("sizeof(size_t): %ld\n", sizeof(size_t));
-	printf("sizeof(pt): %ld\n", sizeof(char *));
+
 	
 	return 0;
 }
