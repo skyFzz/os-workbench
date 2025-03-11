@@ -1,18 +1,11 @@
 #include <am.h>
 #include <stdarg.h>
-
-void print(const char *s, ...) {
-	va_list ap;
-	va_start(ap, s);
-	
-	while (s) {
-		for (; *s; s++) putch(*s);
-		s = va_arg(ap, const char *);
-	}
-	va_end(ap);
-}
+#include <klib.h>
 
 int main(const char *args) {
-	print("\"", args, "\"", " from " __ISA__ " program!\n", NULL);
+  int a = 100;
+  char c = 'K';
+  char *s = "dao sheng wan wu";
+  printf("Test %d\nHello\nThis is char %c\nThis is string %s\n", a, c, s);
 	return 0;
 }
