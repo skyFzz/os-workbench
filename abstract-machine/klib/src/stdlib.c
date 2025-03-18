@@ -5,16 +5,13 @@
 #include <errno.h>
 #include <limits.h>
 
-//static int lock;
-#define ALIGN     16
-#define PAGE_SIZE 4096 
-#define LOCK(lock) while (__sync_lock_test_and_set(&lock, 1)) {}
-#define UNLOCK(lock) __sync_lock_release(&lock)
-
-uintptr_t __brk(uintptr_t);
+#define ALIGN 16
+#define PAGE_SIZE 4096
 
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
 static unsigned long int next = 1;
+
+uintptr_t __brk(uintptr_t);
 
 int rand(void) {
   // RAND_MAX assumed to be 32767
@@ -40,46 +37,61 @@ int atoi(const char* nptr) {
   return x;
 }
 
+uintptr_t __brk(uintptr_t newbrk) {
+    uintptr_t result;
+    asm volatile (
+        "movq $12, %%rax\n" // __NR_brk = 12 (x86-64)
+        "movq %1, %%rdi\n"  // newbrk -> RDI
+        "syscall\n"         // Invoke the system call
+        "movq %%rax, %0"    // Result -> result
+        : "=r"(result)      // Output
+        : "r"(newbrk)       // Input
+        : "rax", "rdi", "rcx", "memory" // Clobbered registers
+    );
+    return result;
+}
+
 void *malloc(size_t n) {
-/*
-  // On native, malloc() will be called during initializaion of C runtime.
-  // Therefore do not call panic() here, else it will yield a dead recursion:
-  //   panic() -> putchar() -> (glibc) -> malloc() -> panic()
-#if !(defined(__ISA_NATIVE__) && defined(__NATIVE_USE_KLIB__))
-  static uintptr_t cur, brk;
-  uintptr_t base, new;
-  // static int lock;
-  size_t align = 1;
-  
-  if (n < SIZE_MAX - ALIGN)
-     while (align < n && align < ALIGN)
-        align += align;
-  n = n + align - (1 & -align);
+	static uintptr_t cur, brk;
+	uintptr_t base, new;
+	//static int lock;
+	size_t align=1;
 
-  LOCK(lock);
-  if (!cur) cur = brk = __brk(0) + 16;  // __brk syscall
-  if (n > SIZE_MAX - brk) goto fail;
+	vme_init();
 
-  base = (cur + align) - (1 & -align);
-  if (base + n > brk) {
-    new = base + n + PAGE_SIZE - (1 & -PAGE_SIZE);
-    if (__brk(new) != new) goto fail;
-    brk = new;
+	if (n < SIZE_MAX - ALIGN)
+		while (align<n && align<ALIGN)
+			align += align;
+	n = (n + align - 1) & -align;
+
+//	LOCK(&lock);
+	if (!cur) cur = brk = __brk(0)+16;
+	if (n > SIZE_MAX - brk) {
+    printf("alloc error\n");
+    return 0;
   }
-  cur = base + n;
-  UNLOCK(lock);
 
-  return (void *)base;
+	base = (cur + align-1) & -align;
+	if (base+n > brk) {
+		new = (base+n + PAGE_SIZE-1) & -PAGE_SIZE;
+    if (__brk(new) != new) {
+      printf("alloc error\n");
+       return 0;
+    }
 
+		brk = new;
+	}
+	cur = base+n;
+//	UNLOCK(&lock);
+
+	return (void *)base;
+
+/*
 fail:
-  UNLOCK(lock);
-  errno = ENOMEM;
-  return 0;
-#endif
-  return NULL;
+//	UNLOCK(&lock);
+	errno = ENOMEM;
+	return 0;
 */
-  panic("Not implemented");
-  
 }
 
 void free(void *ptr) {

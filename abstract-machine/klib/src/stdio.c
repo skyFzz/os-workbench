@@ -8,7 +8,7 @@
 
 void out(const char *s);
 
-/* A very poor and premature implementation of printf, supporting only %d, %c, and %s */
+/* A very poor and premature implementation of printf, supporting only %d, %c, %p, and %s */
 int printf(const char *fmt, ...) {
   int ret=0;
   va_list ap;
@@ -37,6 +37,24 @@ int printf(const char *fmt, ...) {
       } else if (*fmt == 's') {
         char *s = va_arg(ap, char *);
         out(s);
+        ret += sizeof(char *);
+      } else if (*fmt == 'p') {
+        char buf[19];
+        memset(buf, 0, 18);
+        void *p = va_arg(ap, void *);
+        uintptr_t ptr = (uintptr_t)p;
+        const char hex[] = "0123456789abcdef";
+
+        buf[0] = '0';
+        buf[1] = 'x';
+        for (int i=0; i<16; i++) {
+          buf[17-i] = hex[ptr & 0xf];
+          ptr >>= 4;
+        }
+        buf[18] = '\0';
+
+        char *bp = buf;
+        for (; *bp; bp++) putch(*bp);
         ret += sizeof(char *);
       } else {
         out("invalid format character\n");

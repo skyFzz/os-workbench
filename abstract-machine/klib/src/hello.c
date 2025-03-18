@@ -3,9 +3,13 @@
 #include <klib.h>
 
 int main(const char *args) {
-  int a = 100;
-  char c = 'K';
-  char *s = "dao sheng wan wu";
-  printf("Test %d\nHello\nThis is char %c\nThis is string %s\n", a, c, s);
-	return 0;
+  
+  char *root = (char *)malloc(26);
+  root[0] = 'A';
+  
+  for (int i = 0; i < 26; i++) {
+    root[i] = i + 'A';
+  }
+   
+  return 0;
 }
