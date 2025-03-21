@@ -1,122 +1,89 @@
 #include <common.h>
 
-#define HEAP_START  0x300000
-#define HEAP_END    0x8000000
-#define HEAP_SIZE   131072000
-#define NUM_SIZE_CLASSES  13
-#define NUM_CPU     8
-#define PAGE_SIZE   4096
-#define NUM_PAGES   32000
+#define HEAP_START      0x300000
+#define HEAP_END        0x8000000
+#define NUM_PAGES       32000
+#define NUM_CPU         8
+#define PAGE_SIZE       4096
+#define MAX_SIZE        16 << 20
+#define LIST_HEAD_INIT(name) { .next = NULL, .prev = NULL }
+#define NUM_SIZE        10
 
-// from https://git.musl-libc.org/cgit/musl/tree/src/malloc/mallocng/malloc.c
-const uint16_t size_classes[] = {
-  1, 2, 4, 8, 
-  16, 32, 64, 128, 
-  256, 512, 1024, 2048, 
-  4096
+const uint16_t size_class[] = { 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096 };
+
+typedef struct {
+  list_head *next, *prev;
+} list_head;
+
+typedef struct {
+  list_head slabs_full;
+  list_head slabs_partial;
+  list_head slabs_free;
+  int page_per_slab;
+  int obj_per_slab;
+  int obj_size;
+  list_head next;
+  list_head prev;
+  char name[20];
+} cache;
+
+typedef struct {
+  list_head list;
+  void *obj;
+  int active_objs;
+} slab; 
+
+
+typedef struct {
+  int limit;
+  int avail;
+} cpu_cache;
+
+static cache cache_8 = {
+  slabs_full = LIST_HEAD_INIT(cache_8.slabs_full),
+  slabs_partial = LIST_HEAD_INIT(cache_8.slabs_partial),
+  slabs_free = LIST_HEAD_INIT(cache_8.slabs_free),
+  page_per_slab = 1,
+  obj_per_slab = 512,
+  obj_size = 8,
+  next = LIST_HEAD_INIT(cache_8.next),
+  name = "cache-8"
 };
 
-// thread-local allocation buffer, represented as an array of freelists
-// total 13 freelists, representing 13 size_classes < 4097
-typedef struct {
-  Freelist freelists[NUM_SIZE_CLASSES];
-} TLAB;
 
-// freelist with same-size objects
-typedef struct {
-  uint16_t size;  // size_class
-  Block *head;  // linked-list head
-} Freelist;
-
-// memory block
-typedef struct {
-  Block *next;
-  void *start;
-  void *end;
-} Block;
-
-// one thread local alloc buffer per CPU
-TLAB tlab[NUM_CPU];
-
-/* Construct thread-local allocation buffer */
-void init_tlab() {
-  uintptr_t cur_addr = HEAP_START;
-  for (int i = 0; i < NUM_CPU; i++) {
-    for (int j = 0; j < NUM_SIZE_CLASSES; j++) {
-      tlab[i].freelists[j].size = size_classes[j];
-      tlab[i].freelists[j].head->next = init_slab(size_classes[j], cur_addr);  
-      cur_addr += (uintptr_t)PAGE_SIZE;    // Each size will have one page
-    }
-  }
-}
-
-/* Construct a linked list of same size */
-Block *init_slab(uint16_t size, uintptr_t addr) {
-  Block *tmp = (Block *)malloc(sizeof(Block));
-  Block *cur = tmp;
-  for (int i = 0; i < PAGE_SIZE / size; i++) {
-    cur->next = init_block(size, addr);
-    cur = cur->next;
-    addr += (uintptr_t)size;
+void *slab_alloc(size_t size) {
+  for (int i = 0; i < NUM_SIZE; i++) {
+    if (size <= size_class[i]) {
+      size = size_class[i];
+      break;
+    }  
   }
 
-  return tmp->next;
-}
-
-/* Construct a block */
-Block *init_block(uint16_t size, uintptr_t addr) {
-  Block *new_b = (Block *)malloc(sizeof(Block))
-  new_b->start = (void *)addr;
-  new_b->end = (void *)(addr + (uintptr_t)size)
-  return new_b;
-}
-
-/* Retrieve a block */
-Block *pop_block(Freelist *fl) {
-  if (!fl->head->next) return NULL;
-  Block *tmp = fl->head->next;
-  fl->head = tmp->next;
-  return tmp;
-}
-
-/* Return a block */
-void ret_block(Freelist *fl, Block *bl) {
-  if (!fl->head->next) {
-    fl->head->next = bl;
-  } else {
-    bl->next = fl->head->next;
-    fl->head->next = bl;
-  }
-}
-
-static void *kalloc_small(size_t size) {
-  /* Get CPU ID */
-  size_t id = cpu_current();
-
-  /* Align with one of the size classes in TLAB */
-  int i;
-  for (i = 0; i < 13; i++)
-    if (size <= size_classes[i]) break;
-
-  /* Remove a block from the slab */
-  Freelist *fl = tlab[id].freelists[i];
-  Block *bl = pop_block(fl);
+  cache target_cache;
   
-  /* Ask global pool if local runs out */
-  return bl == NULL ? kalloc_big(size) : bl->start;
+  
+
+  
+
 }
 
-static void *kalloc_big(size_t size) {
-  void *start;
-  return start;
+void slab_free(void *ptr) {
+
 }
 
 static void *kalloc(size_t size) {
-  return (size > PAGE_SIZE) ? kalloc_big(size) : kalloc_small(size);
+  if (size > MAX_SIZE) {
+    printf("Requested size larger than 16 MiB.\n");
+    return 0;
+  }
+
+  return size <= 4096 ? slab_alloc(size) : buddy_alloc(size); 
 }
 
 static void kfree(void *ptr) {
+  return mem_free(ptr);
 }
+
 
 static void pmm_init() {
   uintptr_t pmsize = (
@@ -128,6 +95,8 @@ static void pmm_init() {
       "Got %d MiB heap: [%p, %p)\n",
       pmsize >> 20, heap.start, heap.end
   );
+
+  printf("Fuck YOU damn it you asshole\n");
 }
 
 MODULE_DEF(pmm) = {
