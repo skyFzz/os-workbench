@@ -12,32 +12,25 @@
 const uint16_t size_class[] = { 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096 };
 
 typedef struct {
-  list_head *next, *prev;
-} list_head;
+  
+} linked_list;
 
 typedef struct {
-  list_head slabs_full;
-  list_head slabs_partial;
-  list_head slabs_free;
+  linked_list slabs_full;
+  linked_list slabs_partial;
+  linked_list slabs_free;
   int page_per_slab;
   int obj_per_slab;
   int obj_size;
-  list_head next;
-  list_head prev;
+  linked_list next;
   char name[20];
 } cache;
 
 typedef struct {
-  list_head list;
+  linked_list list;
   void *obj;
   int active_objs;
 } slab; 
-
-
-typedef struct {
-  int limit;
-  int avail;
-} cpu_cache;
 
 static cache cache_8 = {
   slabs_full = LIST_HEAD_INIT(cache_8.slabs_full),
@@ -50,24 +43,16 @@ static cache cache_8 = {
   name = "cache-8"
 };
 
+linked_list cache_chain;
 
-void *slab_alloc(size_t size) {
-  for (int i = 0; i < NUM_SIZE; i++) {
-    if (size <= size_class[i]) {
-      size = size_class[i];
-      break;
-    }  
-  }
+cache *cache_create(char name[], size_t size, s ) {
+}
 
-  cache target_cache;
-  
-  
-
-  
+void *alloc(cache *cachep) {
 
 }
 
-void slab_free(void *ptr) {
+void free(cache *cachep, void *p) {
 
 }
 
@@ -77,11 +62,15 @@ static void *kalloc(size_t size) {
     return 0;
   }
 
-  return size <= 4096 ? slab_alloc(size) : buddy_alloc(size); 
+  for (int i = 0; i < NUM_SIZE; i++) {
+    size = size <= class_size[i] ? class_size[i] : size;
+  }
+
+  return alloc(&cache_8);
 }
 
 static void kfree(void *ptr) {
-  return mem_free(ptr);
+  return free(ptr);
 }
 
 
