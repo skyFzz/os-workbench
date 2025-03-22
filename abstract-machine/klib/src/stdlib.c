@@ -5,8 +5,8 @@
 #include <errno.h>
 #include <limits.h>
 
-#define ALIGN 16
-#define PAGE_SIZE 4096
+#define ALIGN       16
+#define PAGE_SIZE   4096
 
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
 static unsigned long int next = 1;
@@ -51,13 +51,14 @@ uintptr_t __brk(uintptr_t newbrk) {
     return result;
 }
 
+/* This malloc/free implementation depends on Abstract Machine APIs: protect/unprotect and map, just like brk and mmap syscalls */
 void *malloc(size_t n) {
+  /*
 	static uintptr_t cur, brk;
 	uintptr_t base, new;
 	//static int lock;
 	size_t align=1;
 
-	vme_init();
 
 	if (n < SIZE_MAX - ALIGN)
 		while (align<n && align<ALIGN)
@@ -86,12 +87,15 @@ void *malloc(size_t n) {
 
 	return (void *)base;
 
+  */
 /*
 fail:
 //	UNLOCK(&lock);
 	errno = ENOMEM;
 	return 0;
 */
+  
+  panic("not implemented");
 }
 
 void free(void *ptr) {

@@ -11,49 +11,127 @@
 
 const uint16_t size_class[] = { 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096 };
 
-typedef struct {
-  
-} linked_list;
-
-typedef struct {
-  linked_list slabs_full;
-  linked_list slabs_partial;
-  linked_list slabs_free;
-  int page_per_slab;
-  int obj_per_slab;
-  int obj_size;
-  linked_list next;
-  char name[20];
-} cache;
-
-typedef struct {
-  linked_list list;
-  void *obj;
-  int active_objs;
-} slab; 
-
-static cache cache_8 = {
-  slabs_full = LIST_HEAD_INIT(cache_8.slabs_full),
-  slabs_partial = LIST_HEAD_INIT(cache_8.slabs_partial),
-  slabs_free = LIST_HEAD_INIT(cache_8.slabs_free),
-  page_per_slab = 1,
-  obj_per_slab = 512,
-  obj_size = 8,
-  next = LIST_HEAD_INIT(cache_8.next),
-  name = "cache-8"
+/* linked list helper */
+struct list_head {
+  struct list_head *next, *prev;
 };
 
-linked_list cache_chain;
-
-cache *cache_create(char name[], size_t size, s ) {
+static void list_init(struct list_head *list) {
+  list->next = list;
+  list->prev = list;
 }
 
-void *alloc(cache *cachep) {
+static void list_add(struct list_head *head, struct list_head *new) {
+  struct list_head *head_next = head->next;
+  struct list_head *head_prev = head;
 
+  new->next = head_next;
+  new->prev = head_prev;
+  head_next->prev = new;
+  head_prev->next = new;
 }
 
-void free(cache *cachep, void *p) {
+static void list_del(struct list_head *prev, struct list_head *next) {
+  next->prev = prev;
+  prev->next = next;
+}
 
+static void list_del_entry(struct list_head *entry) {
+  list_del(entry->prev, entry->next);
+}
+
+typedef struct {
+  list_head slabs_full;
+  list_head slabs_partial;
+  list_head slabs_free;
+  int page_per_slab;
+  int total_objs;
+  int obj_size;
+  list_head next;    // cache-chain
+  char name[20];
+} cache_t;
+
+typedef struct {
+  list_head next;      // marks the full/partial/free list it belongs to; slab-chain
+  void *addr;        // page frame address
+  int free; // current free obj index
+  int free_list[];  // next free obj indices
+} slab_t; 
+
+/* Allocator for allocators initialization */
+static cache_t cache_mom = {
+  .slabs_full = list_init(cache_mom.slabs_full);
+  .slabs_partial = list_init(cache_mom.slabs_partial);
+  .slabs_free = list_init(cache_mom.slabs_free);
+  .name = "cache-mom"
+  .next = list_init(cache_mom.next);
+};
+
+/* Runtime cache creation for different sizes */
+cache_t *cache_create(char *name, size_t size) {
+  cache_t *cache_new = (cache_t *)malloc(sizeof(cache_t));
+
+  cache_new->name = name;
+  cache_new->obj_size = size;
+  cache_new->page_per_slab = 1;
+  cache_new->total_objs = PAGE_SIZE / size;
+  cache_new->slabs_full = list_init();
+  cache_new->slabs_partial = list_init();
+  cache_new->slabs_free = list_init();
+  cache_new->next = list_init(cache_new->next);
+  list_add(cache_mom->next, cache_new->next);
+
+  return &cache_new;
+}
+
+/* Alloc an object and return to the caller */
+void *cache_alloc(cache_t *cache_p) {
+  slab_t *target_slab;
+
+  // check partial list
+  if (cache_p->slabs_paritial->next == cache_p->slabs_partial) {
+    // check free list
+    if (cache_p->slabs_free->next == cache_p->slabs_free) {
+      target_slab = cache_grow(cache_p)->next;
+      list_add(cache_p->slabs_free, target_slab);
+    }
+    list_del_entry(target_slab);
+    list_add(cache_p->slabs_partial, target_slab);
+  }
+  
+  // take the next available object based on slab->free, update index and slab category
+  obj_p = target_slab->addr + cache_p->total_objs * target_slab->free;
+  target_slab->free = target_slab->free_list[target_slab->free];
+  if (target_slab->free_list[target_slab->free] == -1) {
+    list_del_entry(target_slab);
+    list_add(cache_p->slabs_full, target_slab); 
+  } 
+
+  return obj_p;
+}
+
+void *pgalloc() {
+  // To do: implement buddy allocator for n pages
+  return (void *)HEAP_START;
+}
+
+/* Alloc a new slab */
+slab_t *cache_grow(cache_t *cache_p) {
+  void *new_frame = pgalloc();
+  int num_objs = cache_p->total_objs;
+  
+  slab_t *new_slab = (slab_t *)malloc(sizeof(slab_t) + num_objs * sizeof(unsigned int));
+  list_add(cache_p->slabs_free, new_slab->next);
+  new_slab->addr = new_frame;
+  new_slab->free_cnt = num_objs;
+  for (int i = 0; i < num_objs; i++) free[i] = i + 1;
+  // the last element represents an invalid index, indicating that the slab has no free objs left
+  free[num_objs - 1] = -1;
+
+  return new_slab;
+}
+
+void cache_free(cache_t *cache_p, void *obj_p) {
 }
 
 static void *kalloc(size_t size) {
@@ -85,7 +163,7 @@ static void pmm_init() {
       pmsize >> 20, heap.start, heap.end
   );
 
-  printf("Fuck YOU damn it you asshole\n");
+  cache_init();
 }
 
 MODULE_DEF(pmm) = {
