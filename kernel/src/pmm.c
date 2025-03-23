@@ -8,22 +8,24 @@
 #define MAX_SIZE        16 << 20
 #define LIST_HEAD_INIT(name) { .next = NULL, .prev = NULL }
 #define NUM_SIZE        10
+#define MAX_ORDER       13
+
 
 const uint16_t size_class[] = { 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096 };
 
 /* linked list helper */
-struct list_head {
+typedef struct list_head {
   struct list_head *next, *prev;
-};
+} list_head;
 
-static void list_init(struct list_head *list) {
+static void list_init(list_head *list) {
   list->next = list;
   list->prev = list;
 }
 
-static void list_add(struct list_head *head, struct list_head *new) {
-  struct list_head *head_next = head->next;
-  struct list_head *head_prev = head;
+static void list_add(list_head *head, list_head *new) {
+  list_head *head_next = head->next;
+  list_head *head_prev = head;
 
   new->next = head_next;
   new->prev = head_prev;
@@ -31,15 +33,22 @@ static void list_add(struct list_head *head, struct list_head *new) {
   head_prev->next = new;
 }
 
-static void list_del(struct list_head *prev, struct list_head *next) {
+static void list_del(list_head *prev, list_head *next) {
   next->prev = prev;
   prev->next = next;
 }
 
-static void list_del_entry(struct list_head *entry) {
+static void list_del_entry(list_head *entry) {
   list_del(entry->prev, entry->next);
 }
 
+/* buddy allocator structs */
+typedef struct {
+  list_head free_list;
+  unsigned long *map;
+} free_area_t;
+
+/* slab allocator structs */
 typedef struct {
   list_head slabs_full;
   list_head slabs_partial;
@@ -110,9 +119,37 @@ void *cache_alloc(cache_t *cache_p) {
   return obj_p;
 }
 
-void *pgalloc() {
-  // To do: implement buddy allocator for n pages
+/*
+ * Initially, there is only one free block exists in the free_list 
+ * of the order 12. That big block can satisfy one 16
+ * MiB request. Smaller requests are satisfied by breaking
+ * that block. Return NULL(0) if the request cannot be satisfied. 
+ */
+static free_area_t free_lists[MAX_ORDER + 1];
+
+void init_free_lists() {
+  for (int i = 0; i < MAX_ORDER + 1; i++) {
+    list_init(&free_lists[i].free_list);
+    unsigned long *map;
+    if (i >= 5) {
+      map = (unsigned long *)malloc(sizeof(unsigned long));  
+      memset(map, 0, 8); 
+    } else {
+      int num_pairs = 1 << (5 - i) * sizeof(unsigned long);
+      map = (unsigned long *)malloc(num_pairs);
+      memset(map, 0, num_pairs); 
+    }
+  }
+}
+
+/* Binary Buddy Allocator */
+void *pgalloc(int size) {
+  
   return (void *)HEAP_START;
+}
+
+void pgfree(void *page) {
+
 }
 
 /* Alloc a new slab */

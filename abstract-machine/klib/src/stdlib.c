@@ -4,14 +4,15 @@
 #include <stdint.h>
 #include <errno.h>
 #include <limits.h>
+#include <spinlock.h>
 
 #define ALIGN       16
 #define PAGE_SIZE   4096
+#define HEAP_START  0x300000
+#define HEAP_END    0x8000000
 
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
 static unsigned long int next = 1;
-
-uintptr_t __brk(uintptr_t);
 
 int rand(void) {
   // RAND_MAX assumed to be 32767
@@ -37,65 +38,45 @@ int atoi(const char* nptr) {
   return x;
 }
 
-uintptr_t __brk(uintptr_t newbrk) {
-    uintptr_t result;
-    asm volatile (
-        "movq $12, %%rax\n" // __NR_brk = 12 (x86-64)
-        "movq %1, %%rdi\n"  // newbrk -> RDI
-        "syscall\n"         // Invoke the system call
-        "movq %%rax, %0"    // Result -> result
-        : "=r"(result)      // Output
-        : "r"(newbrk)       // Input
-        : "rax", "rdi", "rcx", "memory" // Clobbered registers
-    );
-    return result;
-}
-
 /* This malloc/free implementation depends on Abstract Machine APIs: protect/unprotect and map, just like brk and mmap syscalls */
 void *malloc(size_t n) {
-  /*
 	static uintptr_t cur, brk;
 	uintptr_t base, new;
-	//static int lock;
+  spinlock_t lock = spin_init("mlock");
 	size_t align=1;
-
+  
 
 	if (n < SIZE_MAX - ALIGN)
 		while (align<n && align<ALIGN)
 			align += align;
+  // n = 7
+  // align = 8
+  // n = 1110 & 1000 = 1000 = 8
+
+  // n = 3
+  // align = 4
+  // n = 0111 & 1100 = 0100 
 	n = (n + align - 1) & -align;
 
-//	LOCK(&lock);
-	if (!cur) cur = brk = __brk(0)+16;
-	if (n > SIZE_MAX - brk) {
-    printf("alloc error\n");
-    return 0;
-  }
+	spin_lock(&lock);
+	if (!cur) cur = brk = brk(0)+16;
+	if (n > SIZE_MAX - brk) goto fail;
 
 	base = (cur + align-1) & -align;
 	if (base+n > brk) {
 		new = (base+n + PAGE_SIZE-1) & -PAGE_SIZE;
-    if (__brk(new) != new) {
-      printf("alloc error\n");
-       return 0;
-    }
-
+    if (__brk(new) != new) goto fail;
 		brk = new;
 	}
 	cur = base+n;
-//	UNLOCK(&lock);
+  spin_unlock(&lock);
 
 	return (void *)base;
 
-  */
-/*
 fail:
-//	UNLOCK(&lock);
+  spin_unlock(&lock);
 	errno = ENOMEM;
 	return 0;
-*/
-  
-  panic("not implemented");
 }
 
 void free(void *ptr) {
