@@ -1,143 +1,68 @@
-/* Buddy Allocator */
 #include <common.h>
 
-typedef struct {
+#define PAGE_SIZE 4096
+#define MAX_PAGE 32000
+#define HEAP_START 0x300000
+#define HEAP_END 0x8000000
+#define MAX_ORDER 12
+#define BOOT_SIZE (1 << 19) 
+
+typedef struct free_area {
   list_head free_list;
   unsigned long *map;
 } free_area_t;
 
-typedef struct {
+typedef struct page {
   list_head list;
-  int order;
-} page;
+  unsigned long index;
+  unsigned long inuse;
+} mem_map_t;
 
-page pages[NUM_PAGES];
+uintptr_t bootmem_track = (uintptr_t)HEAP_START;
+mem_map_t *global_mem_map;
+free_area_t *free_area;
 
-/*
- * Initialize free lists and page structs. The memory layout divides 32000 available physcial pages. Based on the lab description, 
- * most workload are small requests no bigger than 128 bytes and less than or equal to 4 KiB. Requests of large memory are rare.
- */
-void pages_init() {
-  int order[] = { 0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096 };
-  int i = 0, index = 1 << 13;
-  for (;; i < index; i++) {
-    list_add(free_area[0].free_list, pages[i].list);
-    pages[i].order = 0;
-  }
-  index += 1 << 2;
-  for (;; i < index; i++) {
-    list_add(free_area[1].free_list, pages[i].list);
-    pages[i].order = 1;
-  }
-  index += (1 << 2) * 3;
-  for (;; i < index; i++) {
-    list_add(free_area[2].free_list, pages[i].list);
-    pages[i].order = 2;
-  }
-  index += 1 << 4;
-  for (;; i < index; i++) {
-    list_add(free_area[3].free_list, pages[i].list);
-    pages[i].order = 3;
-  }
-  index += 1 << 5;
-  for (;; i < index; i++) {
-    list_add(free_area[4].free_list, pages[i].list);
-    pages[i].order = 4;
-  }
-  index += 1 << 6;
-  for (;; i < index; i++) {
-    list_add(free_area[5].free_list, pages[i].list);
-    pages[i].order = 5;
-  }
-  index += 1 << 7;
-  for (;; i < index; i++) {
-    list_add(free_area[6].free_list, pages[i].list);
-    pages[i].order = 6;
-  }
-  index += 1 << 8;
-  for (;; i < index; i++) {
-    list_add(free_area[7].free_list, pages[i].list);
-    pages[i].order = 7;
-  }
-  index += (1 << 8) * 3;
-  for (;; i < index; i++) {
-    list_add(free_area[8].free_list, pages[i].list);
-    pages[i].order = 8;
-  }
-  index += 1 << 10;
-  for (;; i < index; i++) {
-    list_add(free_area[9].free_list, pages[i].list);
-    pages[i].order = 9;
-  }
-  index += (1 << 10) * 3;
-  for (;; i < index; i++) {
-    list_add(free_area[10].free_list, pages[i].list);
-    pages[i].order = 10;
-  }
-  index += (1 << 11) * 3;
-  for (;; i < index; i++) {
-    list_add(free_area[11].free_list, pages[i].list);
-    pages[i].order = 11;
-  }
-  index += (1 << 12) * 3;
-  for (;; i < index; i++) {
-    list_add(free_area[12].free_list, pages[i].list);
-    pages[i].order = 12;
+void *alloc_bootmem(size_t size) {
+  void *p = (void *)bootmem_track;
+  bootmem_track += size;
+  return p;
+}
+
+void mem_map_alloc() {
+  global_mem_map = (mem_map_t *)alloc_bootmem(sizeof(struct page) * MAX_PAGE);
+}
+
+void mem_map_init() {
+  for (unsigned long i = 0; i < MAX_PAGE; i++) {
+    list_init(&global_mem_map[i].list);
+    global_mem_map[i].index = i;
+    global_mem_map[i].inuse = 0;
   }
 }
 
-static free_area_t free_area[MAX_ORDER + 1];
+void free_area_alloc() {
+  free_area = (free_area_t *)alloc_bootmem(sizeof(struct free_area_t) * (MAX_ORDER + 1));
+}
 
-/*
- * Initially, there are 4 free block in the pool: 7 4096-blocks, 
- * 1 2048-block, 1 1024-block, 1 256-block. The largest block 
- * has an order of 12, which can satisfy one 16 MiB request. Return
- * NULL(0) if the request cannot be satisfied. 
- */
-void init_free_area() {
-  for (int i = 0; i < MAX_ORDER + 1; i++) {
+#define CEIL(n, m) (n + m - 1) / m
+#define LONG_ALIGN(n) (n & 7) ? n + -(n & 7) : n 
+void free_area_init() {
+  for (unsigned long i = 0; i < MAX_ORDER + 1; i++) {
+    unsigned long map_size;
+
     list_init(&free_area[i].free_list);
-    unsigned long *map;
-    /* At i = 5, the list has a max of 32 pages per block, 128 blocks, 64 pairs. */
-    if (i >= 5) {
-      map = (unsigned long *)malloc(sizeof(unsigned long));  
-      memset(map, 0, 8); 
-    } else {
-      // simplify (4096 / (1 << (order + 1))) / 64 bits
-      int num_long = (1 << (5 - i)) * sizeof(unsigned long);
-      map = (unsigned long *)malloc(num_pairs);
-      memset(map, 0, num_pairs); 
+    if (i == 0) {
+      for (int j = 0; j < MAX_PAGE; j++) {
+        list_add(&global_mem_map[j].list);
+      }
     }
+    map_size = ((uintptr_t)HEAP_END - bootmem_track) / PAGE_SIZE;   // pages left available
+    map_size = (map_size + (1 << (i + 1)) - 1) >> i + 1;     // for order i, each pair consists of 2^(i+1) pages, take the ceiling to track all pages
+    map_size = (map_size + 7) >> 3;         // each pair takes 1 bit, get how many bytes we need, take the ceiling as well to not lose any bits
+    map_size = LONG_ALIGN(map_size);  // align to long
+    
+    free_area[i].map = (unsigned long *)alloc_bootmem(map_size);
   }
-
-  uintptr_t addr = HEAP_START;
-  mem_block_t *block;
-  for (int i = 0; i < 7; i++) {
-    block = block_create(12, addr);
-    list_add(free_area[12].free_list, block->next);
-    addr = block->area.end; 
-  }
-
-  block = block_create(11, addr);
-  list_add(free_area[11].free_list, block->next);
-  addr = block->area.end;
-
-  block = block_create(10, addr);
-  list_add(free_area[10].free_list, block->next);
-  addr = block->area.end;
-  
-  block = block_create(8, addr);
-  list_add(free_area[8].free_list, block->next);
-}
-
-mem_block_t *block_create(size_t order, uintptr_t start_addr) {
-  mem_block_t *block;
-  list_init(block->next);
-  block->area.start = start_addr;
-  // e.g. start_addr = 0x300000, order = 12, end = 0x1300000
-  block->area.end = start_addr + (1 << order + 12); 
-
-  return block;
 }
 
 int log_2(int n) {
@@ -146,16 +71,55 @@ int log_2(int n) {
   return ans;
 }
 
-/* Find a block of the requested order */ 
-mem_block_t *rmqueue(int order) {
+void toggle_bitmap(int order, unsigned long index) {
+  int bit_index = index >> (order + 1);
+  unsigned long target_byte = free_area[order].map[target_bit / 64];
+  target_byte ^= (1UL << bit_index);
+}
 
+struct page *get_page(list_head *list) {
+  
   
 }
 
-/* Splits page blocks of higher orders until a page block of the needed order is available */
-mem_block_t *expand(mem_block_t *bk, long index, int low, int high, free_area_t *area) {
+/* Find a block of the requested order */ 
+struct page *rmqueue(int order) {
+  
+  if (!list_empty(free_area[order].free_list)) {
+    for (list_head *list = free_area[order].free_list; )
+    
+    
+    
+    toggle_bitmap(order, (unsigned long)(free_area[order].free_list))
+    
+  } 
 
+
+  int real_order = order;
+  free_area_t *target_area = free_area[real_order];
+  while (list_empty(target_area->free_list)) {
+    // If no blocks available at area >= requested order, merging from lower order 
+    if (real_order == MAX_ORDER) {
+      
+    }
+    target_area = free_area[++real_order];
+  }
+  
+  mem_map_t *target_page = (mem_map_t *)((void *)target_area->free_list.next);
+  return expand((struct page *)target_page.next, (unsigned long)(target_page + offsetof(mem_map_t, index)), order, real_order, target_area);
 }
+
+/* Split page blocks of higher orders until a page block of the needed order is available */
+struct page *expand(struct page *page, unsigned long index, int low, int high, free_area_t *area) {
+  for (int i = 0; i < high - low; i++) {
+    
+  }
+  
+}
+
+/* Merge blocks of lower order until a request is fulfilled */
+struct page *merge()
+
 
 /* Return a n-page block where n is the order, ranging from 0 to 12 */
 void *pgalloc(int size) {

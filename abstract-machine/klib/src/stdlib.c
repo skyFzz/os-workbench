@@ -42,10 +42,9 @@ int atoi(const char* nptr) {
 void *malloc(size_t n) {
 	static uintptr_t cur, brk;
 	uintptr_t base, new;
-  spinlock_t lock = spin_init("mlock");
+  spinlock_t lock = spin_init("spin");
 	size_t align=1;
   
-
 	if (n < SIZE_MAX - ALIGN)
 		while (align<n && align<ALIGN)
 			align += align;

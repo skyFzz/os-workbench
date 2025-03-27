@@ -10,10 +10,11 @@ struct cpu {
 extern struct cpu cpus[];
 #define mycpu (&cpus[cpu_current()])
 
+#ifndef panic
 #define panic(...) \
     do { \
         printf("Panic: " __VA_ARGS__); \
         halt(1); \
     } while (0)
-
+#endif
 #endif
