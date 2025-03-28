@@ -32,7 +32,7 @@ static cache_t cache_mom = {
 
 /* Runtime cache creation for different sizes */
 cache_t *cache_create(char *name, size_t size) {
-  cache_t *cache_new = (cache_t *)malloc(sizeof(cache_t));
+  cache_t *cache_new = (cache_t *)pgalloc(sizeof(cache_t));
 
   cache_new->name = name;
   cache_new->obj_size = size;
@@ -78,7 +78,7 @@ slab_t *cache_grow(cache_t *cache_p) {
   void *new_frame = pgalloc();
   int num_objs = cache_p->total_objs;
   
-  slab_t *new_slab = (slab_t *)malloc(sizeof(slab_t) + num_objs * sizeof(unsigned int));
+  slab_t *new_slab = (slab_t *)pgalloc(sizeof(slab_t) + num_objs * sizeof(unsigned int));
   list_add(cache_p->slabs_free, new_slab->next);
   new_slab->addr = new_frame;
   new_slab->free_cnt = num_objs;

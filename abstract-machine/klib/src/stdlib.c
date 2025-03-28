@@ -40,6 +40,7 @@ int atoi(const char* nptr) {
 
 /* This malloc/free implementation depends on Abstract Machine APIs: protect/unprotect and map, just like brk and mmap syscalls */
 void *malloc(size_t n) {
+  /*
 	static uintptr_t cur, brk;
 	uintptr_t base, new;
   spinlock_t lock = spin_init("spin");
@@ -76,6 +77,9 @@ fail:
   spin_unlock(&lock);
 	errno = ENOMEM;
 	return 0;
+  */
+
+  panic("Not implemented");
 }
 
 void free(void *ptr) {

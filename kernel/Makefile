@@ -1,11 +1,7 @@
-NAME := kernel
-SRCS := kernel.c
-export MODULE  := L0
-export AM_HOME := $(PWD)/../abstract-machine
-ifeq ($(ARCH),)
-export ARCH := x86_64-qemu
-endif
+NAME           := kernel
+SRCS           := framework/test4.c $(shell find -L ./src/ -name "*.c")
+INC_PATH       := include/ framework/
 
 include $(AM_HOME)/Makefile
-#include ../oslabs.mk
-#image: git
+include ../oslabs.mk
+image: git
