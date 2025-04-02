@@ -6,4 +6,6 @@
  /home/hz/Laser/os-workbench-copy/abstract-machine/am/include/amdev.h \
  /home/hz/Laser/os-workbench-copy/abstract-machine/klib/include/klib.h \
  /home/hz/Laser/os-workbench-copy/abstract-machine/klib/include/klib-macros.h \
+ /home/hz/Laser/os-workbench-copy/abstract-machine/klib/include/spinlock.h \
+ /home/hz/Laser/os-workbench-copy/abstract-machine/klib/include/kernel_utils.h \
  /home/hz/Laser/os-workbench-copy/kernel/src/list.h

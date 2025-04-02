@@ -1,6 +1,6 @@
-/home/hz/Laser/os-workbench-copy/kernel/build/x86_64-qemu/./src/list.o: \
- /home/hz/Laser/os-workbench-copy/kernel/src/list.c include/common.h \
- framework/kernel.h \
+/home/hz/Laser/os-workbench-copy/kernel/build/x86_64-qemu/framework/simple_test/two_page.o: \
+ /home/hz/Laser/os-workbench-copy/kernel/framework/simple_test/two_page.c \
+ include/common.h framework/kernel.h \
  /home/hz/Laser/os-workbench-copy/abstract-machine/am/include/am.h \
  /home/hz/Laser/os-workbench-copy/abstract-machine/am/include/arch/x86_64-qemu.h \
  /home/hz/Laser/os-workbench-copy/abstract-machine/am/include/amdev.h \

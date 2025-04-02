@@ -1,5 +1,5 @@
 #include <am.h>
-#include <kernel.h>
+#include <kernel_utils.h>
 #include <klib.h>
 
 #define UNLOCKED  0

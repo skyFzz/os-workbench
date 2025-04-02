@@ -22,14 +22,50 @@ int printf(const char *fmt, ...) {
         char buf[11];
         memset(buf, 0, 11);
         int i=0;
+        
+        if (d == 0) {
+          putch('0');
+          ret += sizeof(int);
+          continue;
+        }
+  
+        if (d < 0) {
+          putch('-');
+          d = -d;
+        }
+
         while (d > 0) {
           buf[i++] = d%10 + '0';  
           d/=10;
         }
+
         char *p = buf+10;
         while (!*p) p--;
         for (; *p; p--) putch(*p);
         ret += sizeof(int);
+      } else if (*fmt == 'l' && *(fmt + 1) == 'u') {
+        unsigned long l = va_arg(ap, unsigned long);
+        char buf[21];
+        memset(buf, 0, 21);
+        int i=0;
+
+        if (l == 0) {
+          putch('0');
+          ret += sizeof(unsigned long);
+          fmt++;
+          continue;
+        }
+
+        while (l > 0) {
+          buf[i++] = l%10 + '0';
+          l/=10;
+        }
+
+        char *p = buf+20;
+        while (!*p) p--;
+        for (; *p; p--) putch(*p);
+        ret += sizeof(unsigned long);
+        fmt++; 
       } else if (*fmt == 'c') {
         char c = va_arg(ap, int);
         putch(c);

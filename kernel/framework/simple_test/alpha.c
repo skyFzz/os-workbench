@@ -1,15 +1,15 @@
-#include <kernel.h>
 #include <common.h>
-#include <stdio.h>
-#include <string.h>
+#include <klib.h>
 
-void simple_test_case() {
+struct cpu cpus[16];
+
+void simple_test() {
     // Request 26 bytes of memory
     size_t size = 26;
     void *ptr = pmm->alloc(size);
 
     if (ptr == NULL) {
-        printf("Allocation failed for %zu bytes\n", size);
+        printf("Allocation failed");
         return;
     }
 
@@ -27,6 +27,8 @@ void simple_test_case() {
                    i, 'A' + i, alphabet_ptr[i]);
             correct = 0;
             break;
+        } else {
+          printf("Memory at offset %d: %c\n", i, alphabet_ptr[i]);
         }
     }
 
@@ -40,6 +42,6 @@ void simple_test_case() {
 
 int main() {
     os->init();
-    mpe->init(simple_test_case);
+    mpe_init(simple_test);
     return 0;
 }

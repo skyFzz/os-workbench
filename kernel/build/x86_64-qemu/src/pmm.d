@@ -5,4 +5,6 @@
  /home/hz/Laser/os-workbench-copy/abstract-machine/am/include/arch/x86_64-qemu.h \
  /home/hz/Laser/os-workbench-copy/abstract-machine/am/include/amdev.h \
  /home/hz/Laser/os-workbench-copy/abstract-machine/klib/include/klib.h \
- /home/hz/Laser/os-workbench-copy/abstract-machine/klib/include/klib-macros.h
+ /home/hz/Laser/os-workbench-copy/abstract-machine/klib/include/klib-macros.h \
+ /home/hz/Laser/os-workbench-copy/abstract-machine/klib/include/spinlock.h \
+ /home/hz/Laser/os-workbench-copy/abstract-machine/klib/include/kernel_utils.h
