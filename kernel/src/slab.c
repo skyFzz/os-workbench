@@ -4,7 +4,7 @@
 #include "slab.h"
 
 //#define DEBUG_CACHE_INIT
-#define DEBUG_CACHE_GROW
+//#define DEBUG_CACHE_GROW
 
 #define TOTAL_CLASSES 10
 #define PAGE_SIZE 4096
@@ -81,11 +81,21 @@ cache_t *cache_create(char *name, size_t size) {
 
 /* Create a new slab */
 static slab_t *cache_grow(cache_t *cache_p) {
-  slab_t *new_slab = (slab_t *)alloc_bootmem(sizeof(slab_t) + cache_p->total_objs * sizeof(free_list));
+  int num_obj = cache_p->total_objs;
+
+  slab_t *new_slab = (slab_t *)alloc_bootmem(sizeof(slab_t) + num_obj * sizeof(free_list));
 
   list_add(&cache_p->slabs_free, &new_slab->list);
   new_slab->addr = pgalloc(PAGE_SIZE);
   new_slab->inuse = 0;
+  new_slab->free = 0;
+  
+  // init the free_list
+  for (int i = 0; i < num_obj; i++) {
+    get_free_list(new_slab)[i] = i + 1;
+    // printf("free_list[%d] has object index: %lu\n", i, get_free_list(new_slab)[i]);
+  }
+  get_free_list(new_slab)[num_obj-1] = -1;
 
 #ifdef DEBUG_CACHE_GROW
   printf("New slab from cache: %s\n", cache_p->name);
@@ -115,7 +125,6 @@ static void *__cache_alloc(cache_t *cache) {
   // take the next available object, update free index and slab state
   obj = slab->addr + cache->obj_size * slab->free;
   slab->free = get_free_list(slab)[slab->free];   // macro used to here to update the index of the next free page 
-  printf("next free: %lu\n", slab->free);
 
   // just allocated the last available object
   if (slab->free == -1) {
@@ -156,5 +165,5 @@ static void __cache_free(cache_t *cache_p, void *obj_p) {
 
 void cache_free(void *ptr) {
   __cache_free(cache_mom, (void *)0);
-  panic("not");
+  panic("not yet");
 }

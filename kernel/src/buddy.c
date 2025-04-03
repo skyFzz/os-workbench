@@ -2,6 +2,7 @@
 // CFLAGS += -Iinclude/
 #include <common.h>
 #include "list.h" 
+#include "slab.h" 
 
 #define PAGE_SIZE 4096
 #define TOTAL_PAGES 4096 * 7    // 7 order-12 blocks
@@ -20,9 +21,11 @@ typedef struct free_area {
 typedef struct page {
   list_head list;
   unsigned long index;
+  slab_t *slab;       // pointer to the slab manager
+  cache_t *cache;     // pointer to the cache manager
 } mem_map_t;
 
-static mem_map_t *global_mem_map;
+mem_map_t *global_mem_map;
 static free_area_t *free_area;
 
 // lock should be global
@@ -138,11 +141,6 @@ void *pgalloc(int size) {
   return (void *)(user_mem + (index << 12));
 }
 
-/* 
- * jyy设计的api只针对一个物理页面的分配和释放。实际am的源码对pgalloc的调用
- * 每次也只要一个物理页，符合pgfree api的设计。如果要允许释放一个来自order
- * 大于0的block， 那么pgfree参数还需要order，因为只有caller知道size。
- */
 void pgfree(void *page) {
   int order = 0;
   unsigned long mask = ~(0UL);

@@ -11,7 +11,7 @@ struct cpu cpus[16];
 void simple_test() {
   int i = 0;
   while (i < 10) { 
-    void *ptr = pmm->alloc(16);
+    void *ptr = pmm->alloc(4096*16);
     // spin_lock(&test_lk);
     printf("alloced ptr at: %p\n", ptr);
     // spin_unlock(&test_lk);

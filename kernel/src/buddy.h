@@ -5,3 +5,5 @@ void free_area_alloc();
 void free_area_init();
 void *pgalloc(int size);
 void pgfree(void *page);
+
+extern mem_map_t *global_mem_map;

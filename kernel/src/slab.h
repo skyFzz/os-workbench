@@ -16,7 +16,7 @@ typedef struct cache_t {
 
 typedef struct slab_t {
   list_head list;       // marks the full/partial/free list it belongs to; slab-chain
-  void *addr;           // page frame address
+  void *addr;           // starting page address
   unsigned int inuse;
   free_list free;       // an implementation of singly-linked list using a flexible array member
 } slab_t; 
