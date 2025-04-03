@@ -1,25 +1,19 @@
 #include <common.h>
+#include "list.h"
+#include "slab.h"
+#include "buddy.h"
 
-#define MAX_SIZE (1 << 24)
+#define TOTAL_CLASSES 10
 
-void *pgalloc(int size);
-void pgfree(void *page);
-void free_area_alloc();
-void free_area_init();
-void mem_map_alloc();
-void mem_map_init();
+char* size_class_str[] = { "cache-4", "cache-8", "cache-16", "cache-32", "cache-64", "cache-128", "cache-256", "cache-512", "cache-1024", "cache-2048" };
+extern cache_sizes_t cache_sizes[TOTAL_CLASSES];
 
 static void *kalloc(size_t size) {
-  if (size > MAX_SIZE) {
-    printf("Requested size larger than 16 MiB.\n");
-    return 0;
-  }
-
-  return pgalloc(size);
+  return cache_alloc(size);
 }
 
 static void kfree(void *ptr) {
-  return pgfree(ptr);
+  return cache_free(ptr);
 }
 
 
@@ -38,6 +32,12 @@ static void pmm_init() {
   mem_map_init();
   free_area_alloc();
   free_area_init();
+  
+  cache_mom_alloc();
+  cache_mom_init();
+  for (int i = 0; i < TOTAL_CLASSES; i++) {
+    cache_sizes[i].cache = cache_create(size_class_str[i], cache_sizes[i].size);
+  }
 }
 
 MODULE_DEF(pmm) = {

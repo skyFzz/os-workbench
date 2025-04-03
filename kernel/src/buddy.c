@@ -22,11 +22,12 @@ typedef struct page {
   unsigned long index;
 } mem_map_t;
 
-mem_map_t *global_mem_map;
-free_area_t *free_area;
+static mem_map_t *global_mem_map;
+static free_area_t *free_area;
 
 // lock should be global
-spinlock_t lk = spin_init("Big Lock for rmqueue and expand");
+static spinlock_t lk = spin_init("Big Lock for rmqueue and expand");
+
 uintptr_t boot_mem = (uintptr_t)HEAP_START;
 uintptr_t user_mem = (uintptr_t)(HEAP_START + (OFFSET * PAGE_SIZE));
 
