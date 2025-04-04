@@ -3,6 +3,7 @@
 #include <common.h>
 #include "list.h" 
 #include "slab.h" 
+#include "buddy.h" 
 
 #define PAGE_SIZE 4096
 #define TOTAL_PAGES 4096 * 7    // 7 order-12 blocks
@@ -12,18 +13,6 @@
 #define BOOT_SIZE (1 << 19) 
 #define OFFSET 3328   
 #define LONG_ALIGN(n) (n + 7) & ~7
-
-typedef struct free_area {
-  list_head free_list;
-  unsigned long *map;
-} free_area_t;
-
-typedef struct page {
-  list_head list;
-  unsigned long index;
-  slab_t *slab;       // pointer to the slab manager
-  cache_t *cache;     // pointer to the cache manager
-} mem_map_t;
 
 mem_map_t *global_mem_map;
 static free_area_t *free_area;
@@ -55,6 +44,8 @@ void mem_map_init() {
   for (unsigned long i = 0; i < TOTAL_PAGES; i++) {
     list_init(&global_mem_map[i].list);
     global_mem_map[i].index = i;
+    global_mem_map[i].slab = NULL;
+    global_mem_map[i].cache = NULL;
   }
 }
 

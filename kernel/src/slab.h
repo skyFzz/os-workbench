@@ -1,3 +1,6 @@
+#ifndef SLAB_H
+#define SLAB_H
+
 #include "list.h"
 
 typedef unsigned long free_list;
@@ -35,4 +38,4 @@ void cache_free(void *ptr);
 
 extern cache_sizes_t cache_sizes[10];
 
-
+#endif

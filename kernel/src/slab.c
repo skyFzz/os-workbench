@@ -3,16 +3,18 @@
 #include "buddy.h"
 #include "slab.h"
 
-//#define DEBUG_CACHE_INIT
-//#define DEBUG_CACHE_GROW
+// #define DEBUG_CACHE_INIT
+#define DEBUG_CACHE_GROW
 
+#define USER_START 0x1000000
 #define TOTAL_CLASSES 10
 #define PAGE_SIZE 4096
 #define PAGE_SHIFT 12 
-#define virt_to_page(kaddr) (global_mem_map + (__pa(kaddr) >> PAGE_SHIFT))
 #define MAX_SIZE (1 << 24)
 #define list_entry(ptr, type, member) \
         ((struct type *)((void *)ptr - (void *)&((type *)0)->member))
+
+//static spinlock_t lk = spin_init("Big Lock");
 
 cache_sizes_t cache_sizes[] = {
 	{ 4,	NULL },
@@ -81,19 +83,22 @@ cache_t *cache_create(char *name, size_t size) {
 
 /* Create a new slab */
 static slab_t *cache_grow(cache_t *cache_p) {
+  int page_index;
   int num_obj = cache_p->total_objs;
+  mem_map_t *page;
 
   slab_t *new_slab = (slab_t *)alloc_bootmem(sizeof(slab_t) + num_obj * sizeof(free_list));
-
-  list_add(&cache_p->slabs_free, &new_slab->list);
   new_slab->addr = pgalloc(PAGE_SIZE);
+  page_index = ((uintptr_t)(new_slab->addr - USER_START)) >> PAGE_SHIFT; 
+  page = global_mem_map + page_index;
+  page->cache = cache_p;    // set the cache and slab it belongs to
+  page->slab = new_slab;
   new_slab->inuse = 0;
   new_slab->free = 0;
-  
+
   // init the free_list
   for (int i = 0; i < num_obj; i++) {
     get_free_list(new_slab)[i] = i + 1;
-    // printf("free_list[%d] has object index: %lu\n", i, get_free_list(new_slab)[i]);
   }
   get_free_list(new_slab)[num_obj-1] = -1;
 
@@ -132,6 +137,8 @@ static void *__cache_alloc(cache_t *cache) {
     list_add(&cache->slabs_full, &slab->list); 
   } 
 
+  slab->inuse++;
+
   return obj;
 }
 
@@ -159,11 +166,28 @@ void *cache_alloc(size_t size) {
 }
 
 /* Free an object from the size cache */
-static void __cache_free(cache_t *cache_p, void *obj_p) {
-  panic("not yet");
+static void __cache_free(cache_t *cache_p, slab_t *slab_p, void *obj_p) {
+  // Update free_list status
+  int obj_index = ((uintptr_t)obj_p & (PAGE_SIZE - 1)) / cache_p->obj_size; 
+  get_free_list(slab_p)[slab_p->free] = slab_p->free;   // first save the original next-free index back to the list
+  slab_p->free = obj_index;   
+
+  // Update slab status
+  if (slab_p->inuse == cache_p->total_objs) {
+    list_del_entry(&slab_p->list);
+    list_add(&cache_p->slabs_partial, &slab_p->list);
+  } else if (slab_p->inuse == 1) {
+    list_del_entry(&slab_p->list);
+    list_add(&cache_p->slabs_free, &slab_p->list);
+  }
+  slab_p->inuse--;
 }
 
 void cache_free(void *ptr) {
-  __cache_free(cache_mom, (void *)0);
-  panic("not yet");
+  // Locate the cache ptr belongs
+  mem_map_t *page = global_mem_map + (((uintptr_t)(ptr - USER_START)) >> PAGE_SHIFT);
+  cache_t *cache = page->cache;
+  slab_t *slab = page->slab; 
+
+  return __cache_free(cache, slab, ptr);
 }
