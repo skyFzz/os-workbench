@@ -36,11 +36,9 @@ void *alloc_bootmem(size_t size) {
  * free areas must also be allocated in the heap, a 0.8125 order-12 block, or 3328 pages (32000 / 4096 = 7.8125), are reserved for kernel space. 
  * The rest 7 blocks will be put on the free list for user space.
  */
-void mem_map_alloc() {
+void mem_map_create() {
   global_mem_map = (mem_map_t *)alloc_bootmem(sizeof(struct page) * TOTAL_PAGES);
-}
 
-void mem_map_init() {
   for (unsigned long i = 0; i < TOTAL_PAGES; i++) {
     list_init(&global_mem_map[i].list);
     global_mem_map[i].index = i;
@@ -49,11 +47,9 @@ void mem_map_init() {
   }
 }
 
-void free_area_alloc() {
+void free_area_create() {
   free_area = (free_area_t *)alloc_bootmem(sizeof(struct free_area) * (MAX_ORDER + 1));
-}
 
-void free_area_init() {
   for (unsigned long i = 0; i < MAX_ORDER + 1; i++) {
     unsigned long map_size = PAGE_SIZE * 7; 
     list_init(&free_area[i].free_list);
@@ -128,7 +124,13 @@ void *pgalloc(int size) {
   /* no size check, only kernel can call pgalloc */
   size += -size & (PAGE_SIZE - 1);  // align to the next page
   int order = (size >> 12) - 1; 
-  unsigned long index = rmqueue(order)->index;
+
+  mem_map_t *page = rmqueue(order);
+  if (!page) {
+    return NULL;
+  }
+
+  unsigned long index = page->index;
   return (void *)(user_mem + (index << 12));
 }
 
