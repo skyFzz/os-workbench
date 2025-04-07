@@ -16,10 +16,8 @@ typedef struct page {
 } mem_map_t;
 
 void *alloc_bootmem(size_t size);
-void mem_map_alloc();
-void mem_map_init();
-void free_area_alloc();
-void free_area_init();
+void mem_map_create();
+void free_area_create();
 void *pgalloc(int size);
 void pgfree(void *page);
 

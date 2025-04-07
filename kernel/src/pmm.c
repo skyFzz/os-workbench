@@ -30,14 +30,18 @@ static void pmm_init() {
   );
 
   /* Buddy */
+  printf("Start booting buddy allocator...\n");
   mem_map_create();
   free_area_create();
+  printf("Finish booting buddy allocator...\n");
 
   /* Slab */
+  printf("Start booting general and local caches...\n");
   cache_mom_create();
   for (int i = 0; i < TOTAL_CLASSES; i++) {
     cache_sizes[i].cache = cache_create(size_class_str[i], cache_sizes[i].size);
   }
+  printf("Finish booting caches...\n");
 }
 
 MODULE_DEF(pmm) = {

@@ -39,6 +39,7 @@ void *alloc_bootmem(size_t size) {
 void mem_map_create() {
   global_mem_map = (mem_map_t *)alloc_bootmem(sizeof(struct page) * TOTAL_PAGES);
 
+  // Part of the pages will be used for metadata like slab structures
   for (unsigned long i = 0; i < TOTAL_PAGES; i++) {
     list_init(&global_mem_map[i].list);
     global_mem_map[i].index = i;
@@ -121,7 +122,6 @@ static struct page *rmqueue(int order) {
  * In real usage, only one page will be requested every call.
  */
 void *pgalloc(int size) {
-  /* no size check, only kernel can call pgalloc */
   size += -size & (PAGE_SIZE - 1);  // align to the next page
   int order = (size >> 12) - 1; 
 

@@ -9,6 +9,13 @@
 
 typedef unsigned long free_list;
 
+typedef struct slab_t {
+  list_head list;       // marks the full/partial/free list it belongs to; slab-chain
+  void *addr;           // starting page address
+  unsigned int inuse;
+  free_list free;       // an implementation of singly-linked list using a flexible array member
+} slab_t; 
+
 /* SMP */
 typedef struct cpu_cache_t {
   int limit;
@@ -32,21 +39,13 @@ typedef struct cache_t {
   cpu_cache_t *cpu_caches[MAX_CORE];    // ptr 1 -> cpu_cache_t, ptr 2 -> cpu_cache_t
 } cache_t;
 
-typedef struct slab_t {
-  list_head list;       // marks the full/partial/free list it belongs to; slab-chain
-  void *addr;           // starting page address
-  unsigned int inuse;
-  free_list free;       // an implementation of singly-linked list using a flexible array member
-} slab_t; 
-
 /* Size description struct for general caches. */
 typedef struct cache_sizes {
 	size_t size;
 	cache_t *cache;
 } cache_sizes_t;
 
-void cache_mom_alloc();
-void cache_mom_init();
+void cache_mom_create();
 cache_t *cache_create(char *name, size_t size);
 void *cache_alloc(size_t size);
 void cache_free(void *ptr);
