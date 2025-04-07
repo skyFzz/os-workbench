@@ -4,6 +4,7 @@
 #include <klib.h>
 
 //#define FINITE
+#define SIZE 16 
 struct cpu cpus[16];
 
 spinlock_t test_lk = spin_init("test");
@@ -12,19 +13,27 @@ spinlock_t test_lk = spin_init("test");
 void simple_test() {
 #ifdef FINITE
   int i = 0;
-  while (i < 1) { 
-    void *ptr = pmm->alloc(16);
-    printf("alloced ptr at: %p\n", ptr);
-    pmm->free(ptr);
+  while (i < 50) { 
+    void *ptr1 = pmm->alloc(2049);
+    void *ptr2 = pmm->alloc(2048);
+    printf("alloced ptr1 at: %p\n", ptr1);
+    spin_lock(&test_lk);
+    printf("alloced ptr2 at: %p\n", ptr2);
+    spin_unlock(&test_lk);
+    pmm->free(ptr2);
     i++;
   }
 #else
   while (1) {
-    void *ptr = pmm->alloc(2048);
+    void *ptr1 = pmm->alloc(4096);
+    void *ptr2 = pmm->alloc(SIZE);
+    //void *ptr2 = NULL;
     spin_lock(&test_lk);
-    printf("allocted ptr at: %p\n", ptr);
+    printf("allocted ptr1 at: %p\n", ptr1);
+    printf("allocted ptr2 at: %p\n", ptr2);
     spin_unlock(&test_lk);
-    //pmm->free(ptr);
+    //pmm->free(ptr2);
+    pmm->free(ptr1);
   }
 #endif 
 }

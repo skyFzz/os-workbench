@@ -1,10 +1,13 @@
-#include <kernel.h>
 #include <common.h>
 #include <klib.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include <limits.h>
 
+#define PAGE_SIZE 4096
+#define MAX_ALLOC_SIZE (1 << 24)
+
+struct cpu cpus[16];
+
+// OP_FREE automatically gets 2
 enum ops { OP_ALLOC = 1, OP_FREE };
 
 struct malloc_op {
@@ -57,20 +60,30 @@ void remove_freed_block(void *addr) {
     }
 }
 
+unsigned int seed = 1;
+unsigned int fac = 2;
 // Generate a random malloc operation
 struct malloc_op random_op() {
     struct malloc_op op;
+
+    if (seed > 10) {
+      seed ^= 1;
+    }
 
     // Randomly choose between ALLOC and FREE
     op.type = (rand() % 2 == 0) ? OP_ALLOC : OP_FREE;
 
     if (op.type == OP_ALLOC) {
-        // Generate a random size between 1 and 4096
-        op.sz = (size_t)(rand() % 4096) + 1;
+        // Generate a random size between 1 and 16 MB
+        op.sz = (size_t)(rand() % PAGE_SIZE) + 1;
+        printf("request size: %zu\n", op.sz);
     } else {
         // For FREE, choose a random address from previously allocated blocks
         op.addr = get_random_allocated_address();
     }
+
+    seed *= fac++;
+    srand(seed);
 
     return op;
 }
@@ -105,11 +118,13 @@ void stress_test() {
 
         switch (op.type) {
             case OP_ALLOC: {
+                printf("OP_ALLOC:\n");
                 void *ptr = pmm->alloc(op.sz);
                 alloc_check(ptr, op.sz);
                 break;
             }
             case OP_FREE:
+                printf("OP_FREE:\n");
                 pmm->free(op.addr);
                 remove_freed_block(op.addr); // Remove the freed block from the list
                 break;

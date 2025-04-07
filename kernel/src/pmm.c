@@ -6,11 +6,18 @@
 #define TOTAL_CLASSES 10
 #define PAGE_SIZE 4096
 
+/*
+ * This assignment largely follows the mm design from Linux 2.4.22, mainly the slab allocator and buddy allocator. The following resources have been really helpful:
+ * - Linux-2.4.22 source code
+ * - https://www.kernel.org/doc/gorman/html/understand/understand011.html#fig:%20Layout%20of%20the%20Slab%20Allocator
+ * - https://www.kernel.org/doc/gorman/html/understand/understand011.html#fig:%20Layout%20of%20the%20Slab%20Allocator
+ */ 
+
 char* size_class_str[] = { "cache-4", "cache-8", "cache-16", "cache-32", "cache-64", "cache-128", "cache-256", "cache-512", "cache-1024", "cache-2048" };
 extern cache_sizes_t cache_sizes[TOTAL_CLASSES];
 
 static void *kalloc(size_t size) {
-  return size >= PAGE_SIZE ? pgalloc(size) : cache_alloc(size);
+  return cache_alloc(size);
 }
 
 static void kfree(void *ptr) {

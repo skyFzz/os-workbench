@@ -66,6 +66,29 @@ int printf(const char *fmt, ...) {
         for (; *p; p--) putch(*p);
         ret += sizeof(unsigned long);
         fmt++; 
+      } else if (*fmt == 'z' && *(fmt + 1) == 'u') {
+        size_t l = va_arg(ap, size_t);
+        char buf[21];
+        memset(buf, 0, 21);
+        int i=0;
+
+        if (l == 0) {
+          putch('0');
+          ret += sizeof(size_t);
+          fmt++;
+          continue;
+        }
+
+        while (l > 0) {
+          buf[i++] = l%10 + '0';
+          l/=10;
+        }
+
+        char *p = buf+20;
+        while (!*p) p--;
+        for (; *p; p--) putch(*p);
+        ret += sizeof(size_t);
+        fmt++; 
       } else if (*fmt == 'c') {
         char c = va_arg(ap, int);
         putch(c);
