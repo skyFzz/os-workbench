@@ -16,13 +16,25 @@
 
 mem_map_t *global_mem_map;
 static free_area_t *free_area;
-
-// lock should be global
-static spinlock_t lk = spin_init("Big Lock for rmqueue and expand");
+spinlock_t debug = spin_init("debug");
 
 uintptr_t boot_mem = (uintptr_t)HEAP_START;
 uintptr_t user_mem = (uintptr_t)(HEAP_START + (OFFSET * PAGE_SIZE));
 
+/* Sample current bit */
+static int sample_bitmap(int order, unsigned long index) {
+  int pair_index = index >> (order + 1);
+  unsigned long *target_byte = &free_area[order].map[pair_index / 64];
+  return *target_byte & (1UL << pair_index) ? 1 : 0;
+}
+
+/* Toggle the bit representing the pair and return the new bit */
+static int toggle_bitmap(int order, unsigned long index) {
+  int pair_index = index >> (order + 1);
+  unsigned long *target_byte = &free_area[order].map[pair_index / 64];
+  *target_byte ^= (1UL << pair_index);
+  return *target_byte & (1UL << pair_index) ? 1 : 0; 
+}
 void *alloc_bootmem(size_t size) {
   size += -size & 7;  // align to the next 8 byte
   void *p = (void *)boot_mem;
@@ -67,16 +79,9 @@ void free_area_create() {
     map_size = LONG_ALIGN(map_size);  // align to long
     free_area[i].map = (unsigned long *)alloc_bootmem(map_size);
     memset(free_area[i].map, 0, map_size * sizeof(unsigned long));
+    // printf("pair_status at order 0 pair 0 is: %d\n", sample_bitmap(0, 0));
   }
   assert(boot_mem < user_mem);
-}
-
-/* Toggle the bit representing the pair and return the new bit */
-static int toggle_bitmap(int order, unsigned long index) {
-  int pair_index = index >> (order + 1);
-  unsigned long *target_byte = &free_area[order].map[pair_index / 64];
-  *target_byte ^= (1UL << pair_index);
-  return *target_byte & (1UL << pair_index) ? 1 : 0; 
 }
 
 /* Split page blocks of higher orders until a page block of the needed order is available */
@@ -100,19 +105,18 @@ static struct page *rmqueue(int order) {
   mem_map_t *page;
   int real_order = order;
 
-  spin_lock(&lk);
   do {
     if (!list_empty(&area->free_list)) {
       page = (struct page *)(area->free_list.next);
-      toggle_bitmap(order, page->index);
+      toggle_bitmap(real_order, page->index);
+//    This bug is unbelievely stupid, pure stupidity
+//    int pair_status = toggle_bitmap(order, page->index);
       list_del_entry(&page->list);
       page = expand(page, order, real_order, area);
-      spin_unlock(&lk);
       return page;
     }
     area = &free_area[++real_order];
   } while (real_order <= MAX_ORDER);
-  spin_unlock(&lk);
   
   return NULL;
 }
@@ -139,24 +143,30 @@ void pgfree(void *page) {
   unsigned long mask = ~(0UL);
   unsigned long index = (page - (void *)user_mem) >> 12;
 
-  spin_lock(&lk);
-  int new_bit = toggle_bitmap(order, index);
+  int pair_status = sample_bitmap(order, index);
+  spin_lock(&debug);
+  printf("[cpu: %d] index of page going to be free: %lu\n", cpu_current(), index);
+  printf("pair_status: %d\n", pair_status);
   /* 
-   * After toggle, 1 means the buddy is still in use, 0 means both buddies 
-   * are free, and can be coalesced into a new block of (order + 1).
+   * The current block is inuse
+   * 0: both are allocated
+   * 1: buddy is free
    */
   do {
-    if (!new_bit) {
-      list_del_entry(&global_mem_map[index ^ -mask].list);
-    } else {
+    if (pair_status == 0) {
       list_add(&free_area[order].free_list, &global_mem_map[index].list);
+      toggle_bitmap(order, index);
       break;
-    } 
+    } else {
+      // remove buddy from free list and begin merging
+      list_del_entry(&global_mem_map[index ^ -mask].list);
+      toggle_bitmap(order, index);
+    }
     order++;
     mask <<= 1;     // 1111 -> 1110
     index &= mask;  // 0011 -> 0010 
-    new_bit = toggle_bitmap(order, index); 
+    pair_status = sample_bitmap(order, index); 
   } while (order <= MAX_ORDER);
-  spin_unlock(&lk);
+  spin_unlock(&debug);
 }
 

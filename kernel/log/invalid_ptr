@@ -1,0 +1,50 @@
+hz@hz-TM1701:~/Laser/os-workbench-copy/kernel$ 
+# Building kernel-run [x86_64-qemu]
++ CC src/buddy.c
+# Building am-archive [x86_64-qemu]
+# Building klib-archive [x86_64-qemu]
++ LD -> build/kernel-x86_64-qemu.elf
+x86_64-linux-gnu-ld: warning: trap64.o: missing .note.GNU-stack section implies executable stack
+x86_64-linux-gnu-ld: NOTE: This behaviour is deprecated and will be removed in a future version of the linker
+x86_64-linux-gnu-ld: warning: /home/hz/Laser/os-workbench-copy/kernel/build/kernel-x86_64-qemu.elf has a LOAD segment with RWX permissions
+# Creating image [x86_64-qemu]
++ CREATE -> build/kernel-x86_64-qemu
+Got 125 MiB heap: [0x0000000000300000, 0x0000000008000000)
+Start booting buddy allocator...
+Finish booting buddy allocator...
+Start booting general and local caches...
+Finish booting caches...
+[cpu: 1�p] alloc page at: 0x0000000001000000
+[cpu: 0] alloc page at: 0x0000000001001000
+[cpu: 0] index of page going to be free: 1
+new_bit: 0
+[cpu: 1] index of page going to be free: 0
+new_bit: 1
+[cpu: 1S�] alloc page at: 0x0000000001000000
+[cpu: 0] alloc page at: 0x0000000001000000
+[cpu: 1] index of page going to be free: 0
+new_bit: 1
+[cpu: 0] index of page going to be free: 0
+new_bit: 0
+[cpu: 0] alloc page at: 0x0000000003000000
+[cpu: 1S�] alloc page at: 0x0000000001000000
+[cpu: 0] index of page going to be free: 8192
+new_bit: 0
+[cpu: 1] index of page going to be free: 0
+new_bit: 0
+[cpu: 0] alloc page at: 0x0000000004000000
+[cpu: 0] index of page going to be free: 12288
+new_bit: 0
+[cpu: 1S�] alloc page at: 0x0000000005000000
+[cpu: 0] alloc page at: 0x0000000006000000
+[cpu: 1] index of page going to be free: 16384
+new_bit: 0
+[cpu: 0] index of page going to be free: 20480
+new_bit: 0
+[cpu: 1S�] alloc page at: 0x0000000007000000
+[cpu: 0] alloc page at: 0x0000000419328000
+[cpu: 1] index of pagFail at cache_e gfree: invalid oinptr, out og to be ff bound
+ree: 24576
+new_bit: 0
+[cpu: 1S�] alloc page at: 0x0000000001000000
+CPU #0 Halt (00).

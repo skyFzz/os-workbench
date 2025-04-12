@@ -5,8 +5,8 @@
 
 //#define DEBUG_BOOT
 //#define DEBUG_CACHE_GROW
-//#define DEBUG_SMP
 //#define DEBUG_FREE
+#define DEBUG
 
 #define HEAP_START 0x300000
 #define HEAP_END 0x8000000
@@ -19,7 +19,7 @@
 #define get_free_list(slabp) ((free_list *)((slab_t *)slabp + 1))    
 #define MAX_CORE 8
 
-spinlock_t debug_lock = spin_init("debug");
+spinlock_t global_lock = spin_init("Big buddy lock");
 
 cache_sizes_t cache_sizes[] = {
 	{ 4,	NULL },
@@ -121,12 +121,18 @@ static slab_t *cache_grow(cache_t *cache) {
 
   // Using pgalloc here is better than alloc_bootmem, bootmem is not large enough to handle the amount of slabs that might be requested
   // slab_t *new_slab = (slab_t *)alloc_bootmem(sizeof(slab_t) + num_obj * sizeof(free_list));
+  // access global resource, lock
+  spin_lock(&global_lock); 
   slab_t *new_slab = (slab_t *)pgalloc(sizeof(slab_t) + num_obj * sizeof(free_list));
+  spin_unlock(&global_lock); 
   if (!new_slab) {
     printf("Fail: run out of physical memory\n");
     halt(0);
   }
+  // access global resource, lock
+  spin_lock(&global_lock);
   new_slab->addr = pgalloc(PAGE_SIZE);
+  spin_unlock(&global_lock);
   page_index = ((uintptr_t)(new_slab->addr - USER_START)) >> PAGE_SHIFT; 
   page = global_mem_map + page_index;
   page->cache = cache;    // set the cache and slab it belongs to
@@ -207,23 +213,13 @@ static void *__local_cache_alloc(cache_t *cache) {
   cpu_cache_t *local_cache = cache->cpu_caches[cpu_current()];
 
   if (local_cache->avail) {
-#ifdef DEBUG_SMP
-    printf("Local cache is warm...has %d objs available.\n", local_cache->avail);
-#endif
     obj = cc_entry(local_cache)[--local_cache->avail];
     cc_entry(local_cache)[local_cache->avail] = NULL;   // set the it to NULL after being allocated to make double free check work
   } else {
-#ifdef DEBUG_SMP
-    printf("Starting loading a batch of objects...\n");
-#endif
-    // access global pool for loading, lock
+    // access global cache pool for loading, lock
     spin_lock(&cache->cache_lock);
     obj = __local_cache_load_alloc(cache->batch_size, cache, local_cache); 
     spin_unlock(&cache->cache_lock);
-#ifdef DEBUG_SMP
-    printf("Returning obj at %p to caller...\n", obj);
-    printf("Finish local allocation...\n");
-#endif
   }
 
   return obj;
@@ -235,7 +231,10 @@ void *cache_alloc(size_t size) {
     return 0;
   }
   if (size > 2048) {
+    // access global resource, lock
+    spin_lock(&global_lock);
     void *ptr = pgalloc(size);
+    spin_unlock(&global_lock);
     if (!ptr) {
       printf("Failed pgalloc: run out of physical memory\n");
       halt(0);
@@ -254,9 +253,6 @@ void *cache_alloc(size_t size) {
     printf("Error at cache_alloc.\n");
     halt(0);
   }
-#ifdef DEBUG_SMP
-  printf("Start local allocation from %s for cpu number %d\n", cache->name, cpu_current());
-#endif
   return __local_cache_alloc(cache);
 }
 
@@ -282,7 +278,10 @@ static void cache_gc(cache_t *cache) {
 #endif
   for (int i = 0; i < cache->free_slab_limit; i++) {
     slab_t *tmp = list_entry(slab->list.next, slab_t, list);
+    // access global resource, lock
+    spin_lock(&global_lock);
     pgfree(slab->addr);
+    spin_unlock(&global_lock);
     slab = tmp;
     cache->free_slab_cnt--;
   }
@@ -295,21 +294,6 @@ static void __cache_free(cache_t *cache, slab_t *slab, void *obj) {
   // Update free_list status
   int obj_index = ((uintptr_t)obj & (PAGE_SIZE - 1)) / cache->obj_size; 
 
-  // This check is not needed in the SMP case. It will be handled locally.
-  /*
-  // Double free check, this is expensive, should be optimized
-  if (obj_index == slab->free) {
-    printf("Failed at cache_free: double-free detected\n");
-    halt(0);
-  }
-  for (int i = 0; i < cache->total_objs; i++) {
-    if (get_free_list(slab)[i] == obj_index) {
-      printf("Failed at cache_free: double-free detected\n");
-      halt(0);
-    }
-  }
-  */
-
   get_free_list(slab)[slab->free] = slab->free;   // first save the original next-free index back to the list
   slab->free = obj_index;   
 
@@ -319,7 +303,10 @@ static void __cache_free(cache_t *cache, slab_t *slab, void *obj) {
     list_add(&cache->slabs_partial, &slab->list);
   } else if (slab->inuse == 1) {
     /*
-     * Three conditions used here to trigger gc: 1) caller must call free, 2) when the slab will be moved to the free list, 3) when the number of free slabs reach the limit 
+     * Three conditions used here to trigger gc: 
+     * 1. caller must call free
+     * 2. when the slab will be moved to the free list
+     * 3. when the number of free slabs reach the limit 
      */
     list_del_entry(&slab->list);
     list_add(&cache->slabs_free, &slab->list);
@@ -342,7 +329,7 @@ static void __local_cache_free_batch(cpu_cache_t *local_buf, int batch_size, voi
   assert(local_buf->avail == local_buf->limit);
   for (int i = 0; i < batch_size; i++) {
     /*
-     * It is possible that the objects are from different slabs. So it is necessary to regain the slab.
+     * It is possible that the objects are from different slabs. So it is necessary to recompute the slab.
      */
     void *old_ptr = cc_entry(local_buf)[--local_buf->avail];    // starting from the end
     mem_map_t *page = global_mem_map + (((uintptr_t)(new_ptr - USER_START)) >> PAGE_SHIFT);
@@ -360,22 +347,28 @@ static void __local_cache_free(cache_t *cache, void *ptr) {
   // Double free check. Since we are not iterating the entire buffer, the cost is acceptable.
   for (int i = 0; i < local_buf->avail; i++) {
     if (cc_entry(local_buf)[i] == ptr) {
-      spin_lock(&debug_lock);
+      spin_lock(&debug);
       printf("Found the ptr in the buffer: %s\n", cc_entry(local_buf)[i]);
       printf("The ptr going to be freed: %s\n", ptr);
       printf("Failed at local_cache_free: double free detected\n");
-      spin_unlock(&debug_lock);
+      spin_unlock(&debug);
       halt(0);
     }
   }
 
   if (local_buf->avail == local_buf->limit) {
-    // access global cache, lock
+    spin_lock(&debug);
     printf("Local cache already full, time to free a batch...\n");
+    spin_unlock(&debug);
+
+    // access global cache, lock
     spin_lock(&cache->cache_lock);
     __local_cache_free_batch(local_buf, cache->batch_size, ptr);
     spin_unlock(&cache->cache_lock);
+
+    spin_lock(&debug);
     printf("Finish freeing a batch...\n");
+    spin_unlock(&debug);
   } else {
     cc_entry(local_buf)[local_buf->avail++] = ptr;
   }
@@ -383,7 +376,9 @@ static void __local_cache_free(cache_t *cache, void *ptr) {
 
 void cache_free(void *ptr) {
   if (!ptr) {
+    spin_lock(&debug);
     printf("Fail at cache_free: try to free a NULL pointer\n");
+    spin_unlock(&debug);
     halt(0);
   }
 
@@ -397,7 +392,10 @@ void cache_free(void *ptr) {
   cache_t *cache = page->cache;
   // all pages allocated for slabs must tie to a cache, otherwise the page is directly from pgalloc
   if (!cache) {
+    // access global resource, lock
+    spin_lock(&global_lock);
     pgfree(ptr);
+    spin_unlock(&global_lock);
     return;
   }
   return __local_cache_free(cache, ptr);
