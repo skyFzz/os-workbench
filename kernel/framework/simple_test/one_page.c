@@ -4,13 +4,14 @@
 #include <klib.h>
 #include "buddy.h"
 
-// #define FINITE
+//#define DEBUG 0
+#define DEBUG 1
 #define SIZE 16 
 struct cpu cpus[16];
 
 // should print the same address
 void simple_test() {
-#ifdef FINITE
+#if DEBUG == 0
   int i = 0;
   while (i < 1) { 
     void *ptr1 = pmm->alloc(4096);  // 0 -> 1
@@ -21,6 +22,14 @@ void simple_test() {
     pmm->free(ptr2);  // 1 -> 0
     i++;
   }
+#elif DEBUG == 1
+  int i = 0;
+  while (i < 1) { 
+    void *ptr1 = pmm->alloc(16);  
+    pmm->free(ptr1); 
+    pmm->free(ptr1);  
+    i++;
+  } 
 #else
   while (1) {
     void *ptr1 = pmm->alloc(4096);
