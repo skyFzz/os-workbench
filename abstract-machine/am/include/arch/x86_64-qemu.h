@@ -11,7 +11,7 @@ struct Context {
            rsp, ss, rsp0;
 };
 
-
+// GPR: general purpose register
 #define GPR1 rdi
 #define GPR2 rsi
 #define GPR3 rdx

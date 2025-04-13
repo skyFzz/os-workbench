@@ -1,7 +1,11 @@
 #include "x86-qemu.h"
 
+// function pointer
 static Context* (*user_handler)(Event, Context*) = NULL;
 #if __x86_64__
+// idt: tells the CPU where to jump when interrupts/exceptions occur;
+//      contains NR_IRQ entries (number of interrupt requests)
+// x86-qemu.h:13:#define NR_IRQ         256     // IDT size
 static GateDesc64 idt[NR_IRQ];
 #define GATE GATE64
 #else
@@ -24,6 +28,7 @@ void __am_irq_handle(struct trap_frame *tf) {
     .msg = "(no message)",
   };
 
+// store the registers that are saved by CPU too 
 #if __x86_64
   saved_ctx->rip    = tf->rip;
   saved_ctx->cs     = tf->cs;
@@ -40,15 +45,17 @@ void __am_irq_handle(struct trap_frame *tf) {
   // no ss/esp saved for DPL_KERNEL
   saved_ctx->esp = (tf->cs & DPL_USER ? tf->esp : (uint32_t)(tf + 1) - 8);
 #endif
+  // acquire the based address of the page
   saved_ctx->cr3    = (void *)get_cr3();
 
   #define IRQ    T_IRQ0 +
   #define MSG(m) ev.msg = m;
 
   if (IRQ 0 <= tf->irq && tf->irq < IRQ 32) {
-    __am_lapic_eoi();
+    __am_lapic_eoi();   // Signal completion to the APIC
   }
 
+  // examine the interrupt number saved
   switch (tf->irq) {
     case IRQ 0: MSG("timer interrupt (lapic)")
       ev.event = EVENT_IRQ_TIMER; break;
@@ -58,6 +65,7 @@ void __am_irq_handle(struct trap_frame *tf) {
       ev.event = EVENT_IRQ_IODEV; break;
     case EX_SYSCALL: MSG("int $0x80 system call")
       ev.event = EVENT_SYSCALL; break;
+    // am/src/x86/x86.h:51:#define EX_YIELD       0x81
     case EX_YIELD: MSG("int $0x81 yield")
       ev.event = EVENT_YIELD; break;
     case EX_DE: MSG("DE #0 divide by zero")
@@ -102,6 +110,7 @@ void __am_irq_handle(struct trap_frame *tf) {
 #endif
   }
 
+  // ret_ctx as a pointer, passing to assembly
   __am_iret(ret_ctx);
 }
 
@@ -109,18 +118,54 @@ bool cte_init(Context *(*handler)(Event, Context *)) {
   panic_on(cpu_current() != 0, "init CTE in non-bootstrap CPU");
   panic_on(!handler, "no interrupt handler");
 
+  // The loop initializes the Interrupt Descriptor Table (IDT)
   for (int i = 0; i < NR_IRQ; i ++) {
+/*
+  src/x86/x86.h
+
+12 typedef struct {
+ 11   uint32_t off_15_0  : 16;
+ 10   uint32_t cs        : 16;
+  9   uint32_t isv       :  3;
+  8   uint32_t zero1     :  5;
+  7   uint32_t type      :  4;
+  6   uint32_t zero2     :  1;
+  5   uint32_t dpl       :  2;
+  4   uint32_t p         :  1;
+  3   uint32_t off_31_16 : 16;
+  2   uint32_t off_63_32 : 32;
+  1   uint32_t rsv       : 32;
+145 } GateDesc64;
+
+ 1 #define GATE64(type, cs, entry, dpl) (GateDesc64)             \
+216   { (uint64_t)(entry) & 0xffff, (cs), 0, 0, (type), 0, (dpl), \
+  1     1, ((uint64_t)(entry) >> 16) & 0xffff, (uint64_t)(entry) >> 32, 0 }
+  2 
+
+    STS_TG: Trap Gate type
+    KSEL(SEG_KCODE): Kernel code segment selector
+    __am_irqall: init every IDT entry to point to __am_irqall (a generic int handler)
+                ensures no unhandled interrupts crash the system
+    DPL_KERN: Descriptor Privilege Level
+*/
     idt[i]  = GATE(STS_TG, KSEL(SEG_KCODE), __am_irqall,  DPL_KERN);
   }
 #define IDT_ENTRY(id, dpl, err) \
     idt[id] = GATE(STS_TG, KSEL(SEG_KCODE), __am_irq##id, DPL_##dpl);
+  // override specific entries with dedicated handlers
   IRQS(IDT_ENTRY)
 
+  // init with a function pointer
+  // cte_init(os->trap); in main.c
+  // cte_init(on_interrupt); in thread.os
   user_handler = handler;
   return true;
 }
 
 void yield() {
+  // inline assembly: int 0x81
+  // saved all the registers (a Context struct) to current thread's stack
+  // 0x81 is an irq number, used in the switch case in irq_handle
   interrupt(0x81);
 }
 
@@ -135,6 +180,7 @@ void iset(bool enable) {
 
 void __am_panic_on_return() { panic("kernel context returns"); }
 
+// 创建内核态运行的上下文
 Context* kcontext(Area kstack, void (*entry)(void *), void *arg) {
   Context *ctx = kstack.end - sizeof(Context);
   *ctx = (Context) { 0 };

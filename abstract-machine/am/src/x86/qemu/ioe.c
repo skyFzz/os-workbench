@@ -423,9 +423,14 @@ void __am_percpu_initlapic(void) {
   lapicw(TPR, 0);
 }
 
+// sends an End-of-Interrupt signal to the Local APIC (Advanced Programmable Interrupt Controller)
+// Purpose:
+//  after an interrupt is handled, the Local APIC must be notified that 
+//  processing is complete. This is done by writing to the EOI 
+//  register of the APIC
 void __am_lapic_eoi(void) {
-  if (__am_lapic)
-    lapicw(EOI, 0);
+  if (__am_lapic)   // check whether the local APIC is present
+    lapicw(EOI, 0); // EOI is a constant representing the EOI register offset (0xB0 for x86 APICs)
 }
 
 void __am_lapic_bootap(uint32_t apicid, void *addr) {

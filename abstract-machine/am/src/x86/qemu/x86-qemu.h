@@ -56,8 +56,9 @@ struct cpu_local {
 #if __x86_64__
 struct trap_frame {
   Context saved_context;
-  uint64_t irq, errcode;
-  uint64_t rip, cs, rflags, rsp, ss;
+  uint64_t irq, errcode;  // irq is saved by us, representing which trap
+  uint64_t rip, cs, rflags, rsp, ss;  // x86 hardware helped me save this:w
+
 };
 #else
 struct trap_frame {

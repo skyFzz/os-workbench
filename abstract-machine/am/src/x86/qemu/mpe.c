@@ -37,6 +37,12 @@ int cpu_count() {
   return __am_ncpu;
 }
 
+// __am_lapic is a mem-mapped pointer to the Local APIC registers
+// Each APIC register is 4 bytes wide, so [8] accesses the reg at offset
+//  0x20
+// The APIC ID register contains the current CPU's unique identifier
+// E.g. if __am_lapic[8] = 0x01 00 00 00
+//      0x01 00 00 00 >> 24 = 0x01 (CPU ID = 1)
 int cpu_current(void) {
   return __am_lapic[8] >> 24;
 }

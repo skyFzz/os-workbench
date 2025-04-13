@@ -1,13 +1,16 @@
 #include "x86-qemu.h"
 
 .globl __am_kcontext_start
+// thread start code
 __am_kcontext_start:
   // rdi = arg, rsi = entry
   pushq $__am_panic_on_return
-  jmpq *%rsi
+  jmpq *%rsi  // jump to T1
 
+// in kernel trap handler now, no user programs, save all registers to a Context structure
 trap:
-  cli
+  // push all the reg onto the stack
+  cli   // clear interrupt flag; interrupt disabled when interrupt flag cleared
   subq  $48, %rsp
   pushq %r15
   pushq %r14
@@ -31,11 +34,13 @@ trap:
 
 .globl __am_iret
 __am_iret:
+  // the Context pointer we need to return to is stored in rdi
   movq  %rdi, %rsp
   movq  160(%rsp), %rax
   movw  %ax, %ds
   movw  %ax, %es
   addq  $8, %rsp
+  // reverse the trap
   popq  %rax
   popq  %rbx
   popq  %rcx
@@ -51,7 +56,11 @@ __am_iret:
   popq  %r13
   popq  %r14
   popq  %r15
+  // restore the pc, basically move all the info onto the CPU
   iretq
+
+// this is the entry point when interrupt occurs
+// a typical x86 interrupt handling, where CPU automatically pushes some registers, and the handlder adds additional contexts before calling a common handler
 
 #define NOERR     push $0
 #define ERR
