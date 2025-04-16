@@ -27,6 +27,7 @@ Thread threads[] = {
     { .name = "2", .entry = T2, .next = &threads[3] },
     { .name = "3", .entry = T3, .next = &threads[1] },
 };
+
 Thread *current = &threads[0];
 
 Context *on_interrupt(Event ev, Context *ctx) {
@@ -36,22 +37,21 @@ Context *on_interrupt(Event ev, Context *ctx) {
     // Thread schedule.
     current = current->next;
 
-    // Restore current thread's context.
+    // Restore context.
     return &current->context;
 }
 
-// "Our so called operating system, what it does, it to load the first program and then becomes a background program that handles interruption and syscall requests."
 int main() {
     cte_init(on_interrupt);
 
-    // All the thread init are done here, set the entry
-    // In real world, only one thread is created and it starts by forking itself
+    // Create a context for each thread in physical memory
+    // In real OS, only one thread is created, which then forks itself
     for (int i = 1; i < LENGTH(threads); i++) {
         Thread *t = &threads[i];
         t->context = *kcontext(
             // a Thread object:
             // +--------------------------------------------+
-            // | name, ... end[0] | Kernel stack ...        |
+            // | name, ... end[0] | Kernel stack      | ctx |
             // +------------------+-------------------------+
             // ^                  ^                         ^     
             // t                  &t->end                   t + 1

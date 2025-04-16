@@ -20,6 +20,26 @@ IRQS(IRQHANDLE_DECL)
 void __am_irqall();
 void __am_kcontext_start();
 
+/*
+  /home/hz/Laser/os-workbench-copy/abstract-machine/am/src/x86/qemu/x86-qemu.h
+  #if __x86_64__
+struct trap_frame {
+  Context saved_context;
+  uint64_t irq, errcode;  // irq is saved by us, representing which trap
+  uint64_t rip, cs, rflags, rsp, ss;  // x86 hardware saves these
+};
+
+  /home/hz/Laser/os-workbench-copy/abstract-machine/am/include/arch/x86_64-qemu.h
+ struct Context {
+  void    *cr3;
+  uint64_t rax, rbx, rcx, rdx,
+           rbp, rsi, rdi,
+           r8, r9, r10, r11,
+           r12, r13, r14, r15,
+           rip, cs, rflags,
+           rsp, ss, rsp0;
+};
+*/
 void __am_irq_handle(struct trap_frame *tf) {
   Context *saved_ctx = &tf->saved_context;
   Event ev = {
@@ -97,6 +117,7 @@ void __am_irq_handle(struct trap_frame *tf) {
       break;
   }
 
+  // return the context of the next scheduled thread
   Context *ret_ctx = user_handler(ev, saved_ctx);
   panic_on(!ret_ctx, "returning to NULL context");
 
@@ -150,9 +171,64 @@ bool cte_init(Context *(*handler)(Event, Context *)) {
 */
     idt[i]  = GATE(STS_TG, KSEL(SEG_KCODE), __am_irqall,  DPL_KERN);
   }
+
+// Below is a multi-stage macro
+/*
+  /home/hz/Laser/os-workbench-copy/abstract-machine/am/src/trap64.S
+  #define NOERR     push $0
+#define ERR
+#define IRQ_DEF(id, dpl, err) \
+  .globl __am_irq##id; __am_irq##id: cli;      err; push $id; jmp trap;
+IRQS(IRQ_DEF)
+  .globl  __am_irqall;  __am_irqall: cli; push $0; push $-1; jmp trap;
+*/
 #define IDT_ENTRY(id, dpl, err) \
     idt[id] = GATE(STS_TG, KSEL(SEG_KCODE), __am_irq##id, DPL_##dpl);
-  // override specific entries with dedicated handlers
+/*
+  // Override specific entries with dedicated handlers
+
+  /home/hz/Laser/os-workbench-copy/abstract-machine/am/src/x86/x86.h
+  // Interrupt descriptor configuration 
+  // (interrupt_number, privilege_level, hardware errorcode)
+#define IRQS(_) \
+  _(  0, KERN, NOERR) \
+  _(  1, KERN, NOERR) \
+  _(  2, KERN, NOERR) \
+  _(  3, KERN, NOERR) \
+  _(  4, KERN, NOERR) \
+  _(  5, KERN, NOERR) \
+  _(  6, KERN, NOERR) \
+  _(  7, KERN, NOERR) \
+  _(  8, KERN,   ERR) \
+  _(  9, KERN, NOERR) \
+  _( 10, KERN,   ERR) \
+  _( 11, KERN,   ERR) \
+  _( 12, KERN,   ERR) \
+  _( 13, KERN,   ERR) \
+  _( 14, KERN,   ERR) \
+  _( 15, KERN, NOERR) \
+  _( 16, KERN, NOERR) \
+  _( 19, KERN, NOERR) \
+  _( 31, KERN, NOERR) \
+  _( 32, KERN, NOERR) \
+  _( 33, KERN, NOERR) \
+  _( 34, KERN, NOERR) \
+  _( 35, KERN, NOERR) \
+  _( 36, KERN, NOERR) \
+  _( 37, KERN, NOERR) \
+  _( 38, KERN, NOERR) \
+  _( 39, KERN, NOERR) \
+  _( 40, KERN, NOERR) \
+  _( 41, KERN, NOERR) \
+  _( 42, KERN, NOERR) \
+  _( 43, KERN, NOERR) \
+  _( 44, KERN, NOERR) \
+  _( 45, KERN, NOERR) \
+  _( 46, KERN, NOERR) \
+  _( 47, KERN, NOERR) \
+  _(128, USER, NOERR) \
+  _(129, USER, NOERR)
+*/
   IRQS(IDT_ENTRY)
 
   // init with a function pointer
@@ -163,9 +239,16 @@ bool cte_init(Context *(*handler)(Event, Context *)) {
 }
 
 void yield() {
-  // inline assembly: int 0x81
-  // saved all the registers (a Context struct) to current thread's stack
-  // 0x81 is an irq number, used in the switch case in irq_handle
+  /*
+    /home/hz/Laser/os-workbench-copy/abstract-machine/am/src/x86/x86.h
+    1 #define interrupt(id) \
+    2   asm volatile ("int $" #id);
+
+    The int 0x81 instruction is a software-generated interrupt on x86 systems, but its specific behavior depends entirely on how the operating system configures interrupt 0x81 in the Interrupt Descriptor Table (IDT). Here's what you need to know:
+      If the OS hasn't set up an entry for interrupt 0x81 in the IDT:
+      The CPU will trigger a general protection fault (#GP) or double fault, crashing the system.
+      This happens because unconfigured interrupts are treated as errors.
+  */
   interrupt(0x81);
 }
 

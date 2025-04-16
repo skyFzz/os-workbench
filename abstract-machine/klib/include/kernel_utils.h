@@ -3,8 +3,8 @@
 
 struct cpu {
     /* interrupt management for multiprocessor kernel */
-    int noff;   // track how many times push_off() has been called
-    int intena; // stores whether interrupts were enabled before the first push_off()
+    int noff;   // track how many times push_off() has been called  计数
+    int intena; // stores whether interrupts were enabled before the first push_off()   关中断前状态
 };
 
 extern struct cpu cpus[];

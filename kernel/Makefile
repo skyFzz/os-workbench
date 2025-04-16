@@ -6,4 +6,4 @@ SRCS           := framework/simple_test/one_page.c $(shell find -L ./src/ -name 
 INC_PATH       := include/ framework/ src/
 
 include $(AM_HOME)/Makefile
-include ../oslabs.mk
+#include ../oslabs.mk
