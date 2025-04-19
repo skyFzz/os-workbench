@@ -1,11 +1,13 @@
 .PHONY: build-arg
 
-smp        ?= 2
+smp        ?= 1
 LDFLAGS    += -N -Ttext-segment=0x00100000
 QEMU_FLAGS += -serial mon:stdio \
               -machine accel=tcg \
-              -smp "$(smp), cores=$(smp),sockets=1" \
-              -drive format=raw,file=$(IMAGE)
+              -smp "$(smp),cores=$(smp),sockets=1" \
+              -drive format=raw,file=$(IMAGE) \
+#              -s -S \
+              -d cpu_reset,int,guest_errors
 
 build-arg: image
 	@( echo -n $(mainargs); ) | dd if=/dev/stdin of=$(IMAGE) bs=512 count=2 seek=1 conv=notrunc status=none

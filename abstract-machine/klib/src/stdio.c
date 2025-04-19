@@ -115,6 +115,31 @@ int printf(const char *fmt, ...) {
         char *bp = buf;
         for (; *bp; bp++) putch(*bp);
         ret += sizeof(char *);
+      } else if (*fmt == 'x') {
+        unsigned int x = va_arg(ap, unsigned int);
+        char buf[9];
+        int i=0;
+        
+        if (x == 0) {
+          putch('0');
+          ret++;
+          continue;
+        }
+  
+        while (x > 0) {
+          int tmp = x%16;
+          if (tmp < 10) {
+            buf[i++] = tmp + '0';
+          } else {
+            buf[i++] = tmp - 10 + 'a';  // better than switch-case
+          }
+          x/=16;
+        }
+
+        for (int j = i - 1; j >= 0; j--) {
+          putch(buf[j]);
+        }
+        ret += i;
       } else {
         out("invalid format character\n");
       }

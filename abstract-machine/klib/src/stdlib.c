@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <errno.h>
 #include <limits.h>
-#include <spinlock.h>
 
 #define ALIGN       16
 #define PAGE_SIZE   4096

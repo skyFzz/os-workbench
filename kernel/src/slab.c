@@ -1,4 +1,3 @@
-#include <common.h>
 #include "list.h"
 #include "buddy.h"
 #include "slab.h"
@@ -19,7 +18,7 @@
 #define get_free_list(slabp) ((free_list *)((slab_t *)slabp + 1))    
 #define MAX_CORE 8
 
-spinlock_t global_lock = spin_init("Big buddy lock");
+extern spinlock_t global_lock;
 
 cache_sizes_t cache_sizes[] = {
 	{ 4,	NULL },
@@ -94,7 +93,7 @@ cache_t *cache_create(char *name, size_t size) {
   cache_new->page_per_slab = 1;
   cache_new->total_objs = PAGE_SIZE / size;
   cache_new->obj_size = size;
-  cache_new->cache_lock = spin_init(name);
+  kmt->spin_init(&cache_new->cache_lock, name);
   list_init(&cache_mom->list);
   strncpy(cache_new->name, name, 15);
   // after finishing with general cache
@@ -121,18 +120,17 @@ static slab_t *cache_grow(cache_t *cache) {
 
   // Using pgalloc here is better than alloc_bootmem, bootmem is not large enough to handle the amount of slabs that might be requested
   // slab_t *new_slab = (slab_t *)alloc_bootmem(sizeof(slab_t) + num_obj * sizeof(free_list));
+
   // access global resource, lock
-  spin_lock(&global_lock); 
+  kmt->spin_lock(&global_lock); 
   slab_t *new_slab = (slab_t *)pgalloc(sizeof(slab_t) + num_obj * sizeof(free_list));
-  spin_unlock(&global_lock); 
   if (!new_slab) {
     printf("Fail: run out of physical memory\n");
     halt(0);
   }
-  // access global resource, lock
-  spin_lock(&global_lock);
   new_slab->addr = pgalloc(PAGE_SIZE);
-  spin_unlock(&global_lock);
+  kmt->spin_unlock(&global_lock);
+
   page_index = ((uintptr_t)(new_slab->addr - USER_START)) >> PAGE_SHIFT; 
   page = global_mem_map + page_index;
   page->cache = cache;    // set the cache and slab it belongs to
@@ -217,9 +215,9 @@ static void *__local_cache_alloc(cache_t *cache) {
     cc_entry(local_cache)[local_cache->avail] = NULL;   // set the it to NULL after being allocated to make double free check work
   } else {
     // access global cache pool for loading, lock
-    spin_lock(&cache->cache_lock);
+    kmt->spin_lock(&cache->cache_lock);
     obj = __local_cache_load_alloc(cache->batch_size, cache, local_cache); 
-    spin_unlock(&cache->cache_lock);
+    kmt->spin_unlock(&cache->cache_lock);
   }
 
   return obj;
@@ -232,9 +230,9 @@ void *cache_alloc(size_t size) {
   }
   if (size > 2048) {
     // access global resource, lock
-    spin_lock(&global_lock);
+    kmt->spin_lock(&global_lock);
     void *ptr = pgalloc(size);
-    spin_unlock(&global_lock);
+    kmt->spin_unlock(&global_lock);
     if (!ptr) {
       printf("Failed pgalloc: run out of physical memory\n");
       halt(0);
@@ -279,9 +277,9 @@ static void cache_gc(cache_t *cache) {
   for (int i = 0; i < cache->free_slab_limit; i++) {
     slab_t *tmp = list_entry(slab->list.next, slab_t, list);
     // access global resource, lock
-    spin_lock(&global_lock);
+    kmt->spin_lock(&global_lock);
     pgfree(slab->addr);
-    spin_unlock(&global_lock);
+    kmt->spin_unlock(&global_lock);
     slab = tmp;
     cache->free_slab_cnt--;
   }
@@ -347,28 +345,22 @@ static void __local_cache_free(cache_t *cache, void *ptr) {
   // Double free check. Since we are not iterating the entire buffer, the cost is acceptable.
   for (int i = 0; i < local_buf->avail; i++) {
     if (cc_entry(local_buf)[i] == ptr) {
-      spin_lock(&debug);
       printf("Found the ptr in the buffer: %s\n", cc_entry(local_buf)[i]);
       printf("The ptr going to be freed: %s\n", ptr);
       printf("Failed at local_cache_free: double free detected\n");
-      spin_unlock(&debug);
       halt(0);
     }
   }
 
   if (local_buf->avail == local_buf->limit) {
-    spin_lock(&debug);
     printf("Local cache already full, time to free a batch...\n");
-    spin_unlock(&debug);
 
     // access global cache, lock
-    spin_lock(&cache->cache_lock);
+    kmt->spin_lock(&cache->cache_lock);
     __local_cache_free_batch(local_buf, cache->batch_size, ptr);
-    spin_unlock(&cache->cache_lock);
+    kmt->spin_unlock(&cache->cache_lock);
 
-    spin_lock(&debug);
     printf("Finish freeing a batch...\n");
-    spin_unlock(&debug);
   } else {
     cc_entry(local_buf)[local_buf->avail++] = ptr;
   }
@@ -376,9 +368,7 @@ static void __local_cache_free(cache_t *cache, void *ptr) {
 
 void cache_free(void *ptr) {
   if (!ptr) {
-    spin_lock(&debug);
     printf("Fail at cache_free: try to free a NULL pointer\n");
-    spin_unlock(&debug);
     halt(0);
   }
 
@@ -393,9 +383,9 @@ void cache_free(void *ptr) {
   // all pages allocated for slabs must tie to a cache, otherwise the page is directly from pgalloc
   if (!cache) {
     // access global resource, lock
-    spin_lock(&global_lock);
+    kmt->spin_lock(&global_lock);
     pgfree(ptr);
-    spin_unlock(&global_lock);
+    kmt->spin_unlock(&global_lock);
     return;
   }
   return __local_cache_free(cache, ptr);

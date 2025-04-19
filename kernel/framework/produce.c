@@ -26,8 +26,8 @@ static void consumer(void *arg) {
 }
 
 static void create_threads() {
-  kmt->create(pmm->alloc(sizeof(task_t)), "test-thread-1", producer, xxx);
-  kmt->create(pmm->alloc(sizeof(task_t)), "test-thread-2", consumer, yyy);
+  kmt->create(pmm->alloc(sizeof(task_t)), "test-thread-1", producer, NULL);
+  kmt->create(pmm->alloc(sizeof(task_t)), "test-thread-2", consumer, NULL);
 }
 
 int main(const char *args) {

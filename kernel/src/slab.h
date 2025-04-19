@@ -2,6 +2,7 @@
 #define SLAB_H
 
 #include "list.h"
+#include <os.h>
 
 #define MAX_CORE 8
 #define NAME_LEN 20

@@ -1,4 +1,3 @@
-#include <common.h>
 #include "list.h"
 #include "slab.h"
 #include "buddy.h"
@@ -14,6 +13,7 @@
 
 char* size_class_str[] = { "cache-4", "cache-8", "cache-16", "cache-32", "cache-64", "cache-128", "cache-256", "cache-512", "cache-1024", "cache-2048" };
 extern cache_sizes_t cache_sizes[TOTAL_CLASSES];
+spinlock_t global_lock;
 
 static void *kalloc(size_t size) {
   return cache_alloc(size);
@@ -34,6 +34,9 @@ static void pmm_init() {
       "Got %d MiB heap: [%p, %p)\n",
       pmsize >> 20, heap.start, heap.end
   );
+
+  /* Global pmm lock */
+  kmt->spin_init(&global_lock, "Big buddy lock");
 
   /* Buddy */
   printf("Start booting buddy allocator...\n");

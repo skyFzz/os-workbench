@@ -22,6 +22,5 @@ void *pgalloc(int size);
 void pgfree(void *page);
 
 extern mem_map_t *global_mem_map;
-extern spinlock_t debug;
 
 #endif

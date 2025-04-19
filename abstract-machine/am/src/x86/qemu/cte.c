@@ -1,4 +1,5 @@
 #include "x86-qemu.h"
+#include <klib.h>
 
 // function pointer
 static Context* (*user_handler)(Event, Context*) = NULL;
@@ -119,6 +120,13 @@ void __am_irq_handle(struct trap_frame *tf) {
 
   // return the context of the next scheduled thread
   Context *ret_ctx = user_handler(ev, saved_ctx);
+  /*
+  printf("ret_ctx content:\n");
+  printf("\tcr3: 0x%x\n", ret_ctx->cr3);
+  printf("\trdi (arg): 0x%x\n", ret_ctx->rdi);
+  printf("\trsi (entry): 0x%x\n", ret_ctx->rsi);
+  printf("\trsp (area.end): 0x%x\n", ret_ctx->rsp);
+  */
   panic_on(!ret_ctx, "returning to NULL context");
 
   if (ret_ctx->cr3) {
@@ -131,7 +139,7 @@ void __am_irq_handle(struct trap_frame *tf) {
 #endif
   }
 
-  // ret_ctx as a pointer, passing to assembly
+  printf("Start poping...\n");
   __am_iret(ret_ctx);
 }
 
@@ -266,6 +274,7 @@ void __am_panic_on_return() { panic("kernel context returns"); }
 // 创建内核态运行的上下文
 Context* kcontext(Area kstack, void (*entry)(void *), void *arg) {
   Context *ctx = kstack.end - sizeof(Context);
+  // printf("ctx starts at: %p\n", ctx);
   *ctx = (Context) { 0 };
 
 #if __x86_64__

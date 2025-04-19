@@ -1,6 +1,5 @@
 // emulating system header INCFLAGS += $(addprefix -I, $(INC_PATH))
 // CFLAGS += -Iinclude/
-#include <common.h>
 #include "list.h" 
 #include "slab.h" 
 #include "buddy.h" 
@@ -16,7 +15,6 @@
 
 mem_map_t *global_mem_map;
 static free_area_t *free_area;
-spinlock_t debug = spin_init("debug");
 
 uintptr_t boot_mem = (uintptr_t)HEAP_START;
 uintptr_t user_mem = (uintptr_t)(HEAP_START + (OFFSET * PAGE_SIZE));
@@ -144,7 +142,6 @@ void pgfree(void *page) {
   unsigned long index = (page - (void *)user_mem) >> 12;
 
   int pair_status = sample_bitmap(order, index);
-  spin_lock(&debug);
   printf("[cpu: %d] index of page going to be free: %lu\n", cpu_current(), index);
   printf("pair_status: %d\n", pair_status);
   /* 
@@ -167,6 +164,5 @@ void pgfree(void *page) {
     index &= mask;  // 0011 -> 0010 
     pair_status = sample_bitmap(order, index); 
   } while (order <= MAX_ORDER);
-  spin_unlock(&debug);
 }
 
